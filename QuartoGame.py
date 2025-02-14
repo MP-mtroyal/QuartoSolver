@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import math
-from QuartoDataypes import IntVector2
+from QuartoDataTypes import IntVector2
 
 
 class QuartoGame:
