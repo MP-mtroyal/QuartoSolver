@@ -191,3 +191,21 @@ class QuartoGame:
                 output += '\n' + sepRow + '\n'
         print(output)
 
+#================ Hashes board into unique int ============================
+    # Uses current board state to create a unique int as the board's hash
+    # Considers only what spaces are occupied, and what they are occupied by
+    # Does not consider selected pieces or remaining pieces
+    # The resulting number can be up to the order of 2^80
+    def hashBoard(self):
+        digits = int(math.log2(len(self.remainingPieces)))
+        occupied = 0
+        values = 0
+        for y in range(self.dims.y):
+            for x in range(self.dims.x):
+                if self.board[x, y] >= 0:
+                    values = (values << digits) + int(self.board[x,y])
+                    occupied += 1
+                occupied = occupied << 1
+        occupied = occupied >> 1
+        return (values << len(self.remainingPieces)) + occupied
+
