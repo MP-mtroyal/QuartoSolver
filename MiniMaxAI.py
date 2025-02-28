@@ -16,7 +16,7 @@ class MiniMaxAI:
     def __init__(self):
         self.transposition_table = {}
                         # Be careful with this number (Higher = Slower & theoretically more advanced)
-        self.depth = 5  # Controls how deep minimax will search
+        self.depth = 3  # Controls how deep minimax will search
 
 
     """
