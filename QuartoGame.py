@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import math
 from QuartoDataTypes import IntVector2
-
+import random
 
 class QuartoGame:
     def __init__(self, twistCount=1, verbose=True, undoMemLength=8):
@@ -209,3 +209,40 @@ class QuartoGame:
         occupied = occupied >> 1
         return (values << len(self.remainingPieces)) + occupied
 
+    """
+    Populates the board with a given number of pieces (0-8) ensuring no winning row/col/diag exists.
+
+    Parameters:
+        pieceCount (int): Number of pieces to place on the board.
+
+    Ensures no winning conditions exist after placement.
+    """
+    def populateBoard(self, pieceCount: int):
+        placed = 0
+
+        while placed < pieceCount:
+            # Always clear any leftover selected pieces from prior loops
+            self.selectedPieces = []
+
+            piece = random.choice(self.getRemainingPieces())
+            square = random.choice(self.getAvaliableSquares())
+
+            # Place the piece
+            if self.selectPiece(piece):
+                self.placePiece(piece, square)
+                self.remainingPieces[piece] = 0
+
+                # Check if the placement caused a win
+                if self.checkWin():
+                    # If there's a win, undo and try again
+                    self.undo()
+                    # After undo, clear selectedPieces to avoid leaving them behind
+                    self.selectedPieces = []
+                else:
+                    placed += 1
+
+        # Final sanity check — ensure no leftovers after population
+        self.selectedPieces = []
+
+        if self.verbose:
+            print(f"Board populated with {placed} pieces, ensuring no winning lines.")
