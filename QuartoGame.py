@@ -246,3 +246,17 @@ class QuartoGame:
 
         if self.verbose:
             print(f"Board populated with {placed} pieces, ensuring no winning lines.")
+            self.printGame()
+            self.printRemainingPieces()
+            print()
+
+    def printRemainingPieces(self):
+        remaining = self.getRemainingPieces()
+        def pieceToBinaryString(piece):
+            return f'{piece:04b}'  # Convert to 4-bit binary (assuming 4 traits per piece)
+
+        if remaining:
+            print("Remaining Pieces:")
+            print(", ".join(pieceToBinaryString(piece) for piece in remaining))
+        else:
+            print("No remaining pieces.")

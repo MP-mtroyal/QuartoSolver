@@ -24,8 +24,9 @@ while not quit:
             ai.choosePiece(g)
         ai.placePiece(g)
         g.printGame()
+        g.printRemainingPieces()
+        print('\n')
     
-    print('\n\n')
     if g.checkWin():
         print('WINNER!')
     else:
