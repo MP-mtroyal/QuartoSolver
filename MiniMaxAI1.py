@@ -8,7 +8,7 @@ MiniMaxAI class implements the minimax algorithm with alpha-beta pruning to play
 It uses transposition tables to avoid redundant calculations and supports randomized selection
 among equally good moves to enable unique gameplay.
 """
-class MiniMaxAI:
+class MiniMaxAI1:
     
     """
     Initializes the MiniMaxAI object with a transposition table and search depth.
@@ -16,7 +16,6 @@ class MiniMaxAI:
     def __init__(self):
         self.transposition_table = {}
                         # Be careful with this number (Higher = Slower & theoretically more advanced)
-                        # If using populateBoard(n), depth should be 16-n
         self.depth = 16  # Controls how deep minimax will search
 
 
@@ -70,96 +69,78 @@ class MiniMaxAI:
     def minimax(self, game: QuartoGame, depth: int, alpha: float, beta: float, maximizing: bool, current_piece: int):
         game_hash = (game.hashBoard(), current_piece, maximizing)
 
-        # If this state has already been evaluated, return cached result
         if game_hash in self.transposition_table:
             return self.transposition_table[game_hash]
-        
-        # Base case: If depth is 0, game is won, board is full, or no pieces remain, return evaluation score
+
         if depth == 0 or game.checkWin() or len(game.getAvaliableSquares()) == 0 or len(game.getRemainingPieces()) == 0:
-            if len(game.getAvaliableSquares()) == 0 and not game.checkWin():
-                return 0, None, None  # Stalemate - neutral outcome
-            return self.evaluate(game), None, None
+            score = self.evaluate(game, maximizing)
+            return score, None, None
 
         if maximizing:
-            best_score = -math.inf # Initialize best score for maximizer
-            best_squares = [] # Track equally good moves
+            best_score = -math.inf
+            best_moves = []
+            total_score = 0
 
             for square in game.getAvaliableSquares():
-                g = game.copy()
-                g.placePiece(current_piece, square) # Simulate placing the piece
+                next_game = game.copy()
+                next_game.placePiece(current_piece, square)
 
-                if g.checkWin():
-                    score = self.evaluate(g)
-                    self.transposition_table[game_hash] = (score, square, None)
-                    return score, square, current_piece
+                if next_game.checkWin():
+                    score = self.evaluate(next_game, maximizing=True)
+                else:
+                    score, _, _ = self.minimax(next_game, depth-1, alpha, beta, maximizing=False, current_piece=None)
 
-                eval, _, _ = self.minimax(g, depth - 1, alpha, beta, maximizing=False, current_piece=current_piece)
-                if eval > best_score:
-                    best_score = eval
-                    best_squares = [square]
-                elif eval == best_score:
-                    best_squares.append(square)
+                total_score += score  # Always sum up all scores
 
-                alpha = max(alpha, eval) # Update alpha for alpha-beta pruning
+                if score > best_score:
+                    best_score = score
+                    best_moves = [square]  # Reset best moves if we found a better one
+                elif score == best_score:
+                    best_moves.append(square)  # Add to tie list if it matches best
+
+                alpha = max(alpha, score)
                 if beta <= alpha:
-                    break # Beta cutoff (prune remaining branches)
+                    break  # Alpha-beta pruning
 
-            best_square = random.choice(best_squares) if best_squares else random.choice(game.getAvaliableSquares())
-            self.transposition_table[game_hash] = (best_score, best_square, None)
-            return best_score, best_square, None
+            # Choose randomly among tied best moves
+            best_move = random.choice(best_moves)
+
+            # Return the sum of all scores (or average if you prefer that)
+            self.transposition_table[game.hashBoard(), current_piece, True] = (total_score, best_move, None)
+            return total_score, best_move, None
 
         else:
-            best_score = math.inf # Initialize best score for minimizer (opponent)
-            best_pieces = [] # Track equally good piece selections
+            best_score = math.inf  # Minimizing, so start high
+            best_pieces = []
+            total_score = 0
 
             for piece in game.getRemainingPieces():
-                if not self.is_piece_safe(game, piece):
-                    continue  # Skip this piece — it's too dangerous
-                g = game.copy()
-                g.selectPiece(piece) # Simulate giving this piece to the opponent
-                eval, _, _ = self.minimax(g, depth - 1, alpha, beta, maximizing=True, current_piece=piece)
+                next_game = game.copy()
+                next_game.selectPiece(piece)
 
-                if eval < best_score:
-                    best_score = eval
-                    best_pieces = [piece]
-                elif eval == best_score:
-                    best_pieces.append(piece)
+                threat_penalty = self.assess_piece_threat(next_game, piece)
 
-                beta = min(beta, eval) # Update beta for pruning
+                score, _, _ = self.minimax(next_game, depth-1, alpha, beta, maximizing=True, current_piece=piece)
+                score += threat_penalty  # Apply the threat penalty
+
+                total_score += score  # Track total score for summing
+
+                if score < best_score:
+                    best_score = score
+                    best_pieces = [piece]  # New best — reset the list
+                elif score == best_score:
+                    best_pieces.append(piece)  # Tie — add to the list
+
+                beta = min(beta, score)
                 if beta <= alpha:
-                    break # Alpha cutoff (prune remaining branches)
+                    break  # Alpha-beta pruning
 
-            best_piece = random.choice(best_pieces) if best_pieces else random.choice(game.getRemainingPieces())
-            self.transposition_table[game_hash] = (best_score, None, best_piece)
-            return best_score, None, best_piece
+            # Choose randomly among best pieces
+            best_piece = random.choice(best_pieces)
 
-
-    """
-    is_piece_safe()
-        Determines if a given piece is "safe" to hand to the opponent, meaning the piece
-        will not immediately complete a winning line for the opponent when placed.
-
-        The safety check works by examining all rows, columns, and diagonals on the board
-        and looking for lines with exactly 3 placed pieces and 1 empty square.
-        If the given piece would complete all 4 traits in that line (shared_bits == 4), 
-        it is considered unsafe.
-
-        Parameters:
-        game (QuartoGame): The current state of the game.
-        piece (int): The piece to check for safety.
-
-        Returns:
-        bool: True if the piece is safe (no immediate win possible), False if the piece 
-                would complete a winning line.
-    """
-    def is_piece_safe(self, game: QuartoGame, piece: int) -> bool:
-        for line in self.get_all_lines(game):
-            placed_count, empty_count, shared_bits = self.analyze_line_with_traits(game, line)
-
-            if placed_count == 3 and empty_count == 1 and shared_bits == 4:
-                return False  # Unsafe - completes a winning line
-
-        return True
+            # Store in transposition table and return
+            self.transposition_table[(game.hashBoard(), None, False)] = (total_score, None, best_piece)
+            return total_score, None, best_piece
 
 
     """
@@ -179,48 +160,80 @@ class MiniMaxAI:
         Returns:
         float: 1 if the AI wins, -1 if the opponent wins, 0 for a stalemate.
     """
-    """
     def evaluate(self, game: QuartoGame, maximizing: bool) -> float:
         if game.checkWin():
             return 1 if maximizing else -1  # AI win if maximizing, AI loss if minimizing
 
         if len(game.getAvaliableSquares()) == 0:
-            return 0  # Stalemate
+            return 0.1  # Stalemate, give score boost as stalemate is better than losing
 
         return 0  # Non-terminal states are neutral
-    """
-
-
-    """
-    evaluate()
-        Assigns a heuristic score to the current game state based on potential threats,
-        completed lines, and matching traits.
-
-        Parameters:
-        game (QuartoGame): The current state of the game.
-
-        Returns:
-        float: Evaluation score for the current game state.
-    """
-    def evaluate(self, game: QuartoGame) -> float:
-        if game.checkWin():
-            return 100  # Immediate win check
-
-        score = 0
-
-        for line in self.get_all_lines(game):
-            placed_count, empty_count, shared_bits = self.analyze_line_with_traits(game, line)
-
-            if placed_count == 3 and empty_count == 1:
-                score += 20 * shared_bits  # Close to win
-            elif placed_count == 2 and empty_count == 2:
-                score += 5 * shared_bits  # Mid-game heat
-            elif placed_count == 1 and empty_count == 3:
-                score += 2  # Early-game heat
-
-        return score
     
 
+    """
+    Evaluates the potential threat created by handing over a specific piece to the opponent.
+
+    This function simulates placing the given piece in every available square, checking
+    if the placement either immediately causes a win for the opponent or creates a
+    three-in-a-row situation with shared traits (a strong future threat).
+
+    Threats are penalized using a weighted scoring system:
+        - Immediate forced win: -0.5 penalty (moderate severity)
+        - Three-in-a-row threat: -0.2 penalty (lower severity)
+
+    Parameters:
+        game (QuartoGame): The current game state.
+        piece (int): The piece being evaluated for threat potential.
+
+    Returns:
+        float: The cumulative threat penalty for handing over this piece. Higher negative
+                values indicate a more dangerous piece to give to the opponent.
+    """
+    def assess_piece_threat(self, game: QuartoGame, piece: int) -> float:
+        threat_penalty = 0
+
+        for square in game.getAvaliableSquares():
+            temp_game = game.copy()
+            temp_game.placePiece(piece, square)
+
+            if temp_game.checkWin():
+                threat_penalty -= 0.5  # Moderate penalty for handing over a piece that gives a forced win
+
+            if self.creates_three_in_a_row(temp_game, square):
+                threat_penalty -= 0.2  # Smaller penalty for creating a threat
+
+        return threat_penalty
+
+
+    """
+    Checks if placing a piece at a given square would create a three-in-a-row line
+    where the pieces share at least 3 matching traits.
+
+    This detects situations where placing the piece could create a strong threat,
+    signaling that the square contributes to a nearly-completed winning line.
+
+    Parameters:
+        game (QuartoGame): The current game state.
+        square (IntVector2): The board position being evaluated.
+
+    Returns:
+        bool: True if placing at the given square would create a three-in-a-row
+                with at least 3 matching traits. False otherwise.
+    """
+    def creates_three_in_a_row(self, game: QuartoGame, square: IntVector2) -> bool:
+        lines = self.get_all_lines(game)
+        for line in lines:
+            if square not in line:
+                continue
+
+            placed_count, _, shared_traits = self.analyze_line_with_traits(game, line)
+
+            if placed_count == 3 and shared_traits >= 3:
+                return True
+
+        return False
+
+    
     """
     get_all_lines()
         Returns a list of all rows, columns, and diagonals on the game board.
@@ -247,6 +260,7 @@ class MiniMaxAI:
         lines.append(diag2)
 
         return lines
+    
 
     """
     analyze_line_with_traits()

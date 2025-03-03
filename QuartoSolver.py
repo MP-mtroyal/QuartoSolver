@@ -2,6 +2,7 @@
 from QuartoGame import QuartoGame
 from QuartoAI import QuartoAI
 from MiniMaxAI import MiniMaxAI
+from MiniMaxAI1 import MiniMaxAI1
 
 
 #===== Simple AI playing against itself. 
@@ -10,20 +11,22 @@ quit = False
 twistCount = 1
 while not quit:
     g = QuartoGame(twistCount=twistCount)
+    g.populateBoard(8)
     #ai = QuartoAI()
-    ai = MiniMaxAI()
+    ai = MiniMaxAI1()
     ai.transposition_table.clear()
 
-    while not g.checkWin() and len(g.getRemainingPieces()) > 0:
-        input("\nPress Enter...")
+    while not g.checkWin() and len(g.getRemainingPieces()) > 0 and len(g.getAvaliableSquares()) > 0:
+        #input("\nPress Enter...")
         for _ in range(twistCount):
             if len(g.getRemainingPieces()) < 1:
                 break
             ai.choosePiece(g)
         ai.placePiece(g)
         g.printGame()
+        g.printRemainingPieces()
+        print('\n')
     
-    print('\n\n')
     if g.checkWin():
         print('WINNER!')
     else:
@@ -31,6 +34,6 @@ while not quit:
     
     print()
 
-    c = input('\nPlay again? y/n  ')
-    if c != 'y':
-        quit = True
+    #c = input('\nPlay again? y/n  ')
+    #if c != 'y':
+    #    quit = True
