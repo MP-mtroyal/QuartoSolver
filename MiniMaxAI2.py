@@ -58,8 +58,8 @@ class MiniMaxSolver:
             pieceHash = (gameHash, currPiece)
             if pieceHash in self.memoTable:
                 score, move, square, moveStr = self.memoTable[pieceHash]
-                if not turn:
-                    score *= -1
+                #if not turn:
+                #    score *= -1
                 return score, move, square, moveStr
             
             for square in game.getAvaliableSquares():
