@@ -5,6 +5,8 @@ import math
 from QuartoDataTypes import IntVector2
 import random
 
+random.seed(3)
+
 class QuartoGame:
     def __init__(self, twistCount=1, verbose=True, undoMemLength=8):
         self.twistCount      = twistCount
@@ -221,8 +223,6 @@ class QuartoGame:
         placed = 0
 
         while placed < pieceCount:
-            # Always clear any leftover selected pieces from prior loops
-            self.selectedPieces = []
 
             piece = random.choice(self.getRemainingPieces())
             square = random.choice(self.getAvaliableSquares())
@@ -230,19 +230,15 @@ class QuartoGame:
             # Place the piece
             if self.selectPiece(piece):
                 self.placePiece(piece, square)
-                self.remainingPieces[piece] = 0
 
                 # Check if the placement caused a win
                 if self.checkWin():
                     # If there's a win, undo and try again
-                    self.undo()
-                    # After undo, clear selectedPieces to avoid leaving them behind
-                    self.selectedPieces = []
+                    self.undo(2)
                 else:
                     placed += 1
-
-        # Final sanity check — ensure no leftovers after population
-        self.selectedPieces = []
+            else:
+                self.undo()
 
         if self.verbose:
             print(f"Board populated with {placed} pieces, ensuring no winning lines.")

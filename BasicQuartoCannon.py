@@ -11,7 +11,7 @@ class BasicQuartoCannon(QuartoCannon):
         masks = [15] + [2 ** i for i in range(4)]
         for mask in masks:
             newBoard = self.flipForScore(board, mask, splitFunc, flipFunc)
-            if newBoard != None:
+            if newBoard is not None:
                 return newBoard
         # All masks resulted in ties
         return board
@@ -27,9 +27,12 @@ class BasicQuartoCannon(QuartoCannon):
         return board
 
     def scoreList(self, featList, mask):
-        result = []
+        result = -1
         for feat in featList:
-            result += feat & mask
+            feat = int(feat)
+            if feat >= 0:
+                if result < 0 : result = 0
+                result += feat & mask
         return result
 
     def diagonalSplit(self, board):
@@ -43,12 +46,12 @@ class BasicQuartoCannon(QuartoCannon):
                     topRight.append(board[index])
         return bottomLeft, topRight
 
-    def horizontalSplit(self, board):
+    def verticalSplit(self, board):
         board = board.transpose()
-        up, down = self.verticalSplit(board)
+        up, down = self.horizontalSplit(board)
         return up, down
 
-    def verticalSplit(self, board):
+    def horizontalSplit(self, board):
         left, right = [], []
         for y in range(len(board)):
             for x in range(len(board[0])):
@@ -62,28 +65,43 @@ class BasicQuartoCannon(QuartoCannon):
     def diagonalReflect(self, board):
         return board.transpose()
 
-    def horizontalReflect(self, board):
-        board = board.transpose()
-        board = self.verticalReflect(board)
-        board = board.transpose()
+    def verticalReflect(self, board):
+        board = np.flip(board, axis=1)
         return board
 
-    def verticalReflect(self, board):
-        for i in range(len(board) // 2):
-            temp = board[i]
-            board[i] = board[-(i+1)]
-            board[-(i+1)] = temp
+    def horizontalReflect(self, board):
+        board = np.flip(board, axis=0)
+        return board
+    
+    def xorMatrix(self, board):
+        xorValue = -1
+        for y in range(board.shape[0]):
+            for x in range(board.shape[1]):
+                index = IntVector2(x,y)
+                if xorValue < 0 and board[index] >= 0:
+                    xorValue = int(board[index])
+                if board[index] >= 0:
+                    board[index] = int(board[index]) ^ xorValue
         return board
 
     def cannonizeGame(self, game):
+        if sum(sum(game.board)) < -15:
+            return game
+        # print(" = = = = = = = = = = = = = = = =  = = = = = = = = = = ")
+        # game.printGame()
         game  = game.copy()
         board = game.board
         board = self.flipForScoreAllMasks(board, self.horizontalSplit, self.horizontalReflect)
         board = self.flipForScoreAllMasks(board, self.verticalSplit, self.verticalReflect)
         board = self.flipForScoreAllMasks(board, self.diagonalSplit, self.diagonalReflect)
+
+        #board = self.xorMatrix(board)
         game.board = board
+        # print()
+        # game.printGame()
         return game
     
     def reset(self):
         return super().reset()
     
+

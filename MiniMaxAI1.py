@@ -1,5 +1,6 @@
 from QuartoGame import QuartoGame
 from QuartoDataTypes import IntVector2
+from BasicQuartoCannon import BasicQuartoCannon
 import math
 import random
 
@@ -17,6 +18,7 @@ class MiniMaxAI1:
         self.transposition_table = {}
                         # Be careful with this number (Higher = Slower & theoretically more advanced)
         self.depth = 16  # Controls how deep minimax will search
+        self.cannonizer = BasicQuartoCannon()
 
 
     """
@@ -67,10 +69,16 @@ class MiniMaxAI1:
         tuple: (best_score, best_square, best_piece)
     """
     def minimax(self, game: QuartoGame, depth: int, alpha: float, beta: float, maximizing: bool, current_piece: int):
-        game_hash = (game.hashBoard(), current_piece, maximizing)
+        #game_hash = (game.hashBoard(), current_piece, maximizing)
+        cannonGame = self.cannonizer.cannonizeGame(game)
+        cannonHash = cannonGame.hashBoard()
+        game_hash = (cannonHash, current_piece, maximizing)
 
-        if game_hash in self.transposition_table:
-            return self.transposition_table[game_hash]
+        if cannonHash in self.transposition_table:
+            return self.transposition_table[cannonHash]
+
+        # if game_hash in self.transposition_table:
+        #     return self.transposition_table[game_hash]
 
         if depth == 0 or game.checkWin() or len(game.getAvaliableSquares()) == 0 or len(game.getRemainingPieces()) == 0:
             score = self.evaluate(game, maximizing)
@@ -98,20 +106,21 @@ class MiniMaxAI1:
                 elif score == best_score:
                     best_moves.append(square)  # Add to tie list if it matches best
 
-                alpha = max(alpha, score)
-                if beta <= alpha:
-                    break  # Alpha-beta pruning
+                # alpha = max(alpha, score)
+                # if beta <= alpha:
+                #     break  # Alpha-beta pruning
 
             # Choose randomly among tied best moves
             best_move = random.choice(best_moves)
 
             # Return the sum of all scores (or average if you prefer that)
-            self.transposition_table[game.hashBoard(), current_piece, True] = (total_score, best_move, None)
+            #self.transposition_table[game_hash] = (total_score, best_move, None)
+            #self.transposition_table[cannonHash] = (total_score, best_move, None)
             return total_score, best_move, None
 
         else:
             best_score = math.inf  # Minimizing, so start high
-            best_pieces = []
+            best_pair = []
             total_score = 0
 
             for piece in game.getRemainingPieces():
@@ -120,27 +129,28 @@ class MiniMaxAI1:
 
                 threat_penalty = self.assess_piece_threat(next_game, piece)
 
-                score, _, _ = self.minimax(next_game, depth-1, alpha, beta, maximizing=True, current_piece=piece)
+                score, curr_move, _ = self.minimax(next_game, depth-1, alpha, beta, maximizing=True, current_piece=piece)
                 score += threat_penalty  # Apply the threat penalty
 
                 total_score += score  # Track total score for summing
 
                 if score < best_score:
                     best_score = score
-                    best_pieces = [piece]  # New best — reset the list
+                    best_pair = [(piece, curr_move)]  # New best — reset the list
                 elif score == best_score:
-                    best_pieces.append(piece)  # Tie — add to the list
+                    best_pair.append((piece, curr_move))  # Tie — add to the list
 
-                beta = min(beta, score)
-                if beta <= alpha:
-                    break  # Alpha-beta pruning
+                # beta = min(beta, score)
+                # if beta <= alpha:
+                #     break  # Alpha-beta pruning
 
             # Choose randomly among best pieces
-            best_piece = random.choice(best_pieces)
+            best_piece, best_move = random.choice(best_pair)
 
             # Store in transposition table and return
-            self.transposition_table[(game.hashBoard(), None, False)] = (total_score, None, best_piece)
-            return total_score, None, best_piece
+            #self.transposition_table[game_hash] = (total_score, None, best_piece)
+            self.transposition_table[cannonHash] = (total_score, best_move, best_piece)
+            return total_score, best_move, best_piece
 
 
     """
