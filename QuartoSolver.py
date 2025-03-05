@@ -8,7 +8,7 @@ import time
 
 gamesToTest = 1
 currGame = 1
-piecesToStart = 0
+piecesToStart = 6
 durations = []
 
 #===== Simple AI playing against itself. 

@@ -13,14 +13,20 @@ class MiniMaxSolver:
         self.cannonizer = BasicQuartoCannon()
 
     def placePiece(self, game: QuartoGame) -> None:
-        score, _, square = self.miniMax(game, self.depth, True, True)
+        score, _, square, moves = self.miniMax(game, self.depth, True, True)
+        print("Placement Path: ", end="")
+        print(moves)
+        print()
         if square is not None:
             game.placePiece(game.selectedPieces[0], square)
         else:
             print("Square WAS NONE: You shouldn't see this")
 
     def choosePiece(self, game: QuartoGame) -> None:
-        score, piece, _ = self.miniMax(game, self.depth, True, False)
+        score, piece, _, moves = self.miniMax(game, self.depth, True, False)
+        print("Placement Path: ", end="")
+        print(moves)
+        print()
         if piece is not None:
             game.selectPiece(piece)
         else:
@@ -34,58 +40,69 @@ class MiniMaxSolver:
             placingPiece: bool
     ):
         if depth == 0 or game.checkWin() or len(game.getAvaliableSquares()) == 0 or len(game.getRemainingPieces()) == 0:
-            return self.eval(game, turn), None, None
+            gameState = self.eval(game, turn)
+            return gameState, None, None, " Score:" + str(gameState)
         cannonGame = self.cannonizer.cannonizeGame(game)
         gameHash = cannonGame.hashBoard()
         
 
         if placingPiece:
-            fullHash = (gameHash, None)
-            if fullHash in self.memoTable:
-                return self.memoTable[fullHash]
             #try all selected pieces in all avaliable squares
             if len(game.selectedPieces) == 0:
                 print("ERROR: NO SELECTED PIECES to be placed")
                 return
 
-            bestSquare, bestScore = None, -math.inf
-
+            bestMoves, bestSquare, bestScore = None, None, -math.inf
+            moves = None
             currPiece = game.selectedPieces[0]
+            pieceHash = (gameHash, currPiece)
+            if pieceHash in self.memoTable:
+                score, move, square, moveStr = self.memoTable[pieceHash]
+                if not turn:
+                    score *= -1
+                return score, move, square, moveStr
+            
             for square in game.getAvaliableSquares():
                 nextGame = game.copy()
-                nextGame.placePiece(currPiece, square)
-                score, _, _ = self.miniMax(nextGame, depth-1, turn, False)
+
+                if not nextGame.placePiece(currPiece, square):
+                    print("FAILED TO PLACE")
+                score, _, _, moves = self.miniMax(nextGame, depth-1, turn, False)
                 if not turn:
                     score *= -1
 
                 if score > bestScore:
                     bestScore = score
                     bestSquare = square
-            self.memoTable[(gameHash, currPiece)] = [bestScore, currPiece, bestSquare]
-            return [bestScore, None, bestSquare]
+                    bestMoves = moves
+            moveStr = f'({bestSquare.x},{bestSquare.y})' + "->" + bestMoves
+            self.memoTable[pieceHash] = [bestScore, currPiece, bestSquare, moveStr]
+            return bestScore, None, bestSquare, moveStr
 
         else: #choose piece
             #try selecting all avaliable pieces
-            bestPiece, bestScore = None, -math.inf
+            bestMoves, bestPiece, bestScore = None, None, -math.inf
+            moves = None
 
             for piece in game.getRemainingPieces():
                 pieceHash = (gameHash, piece)
                 if pieceHash in self.memoTable:
-                    return self.memoTable[pieceHash]
+                    score, _, _, moves = self.memoTable[pieceHash]
+                else:
+                    nextGame = game.copy()
+                    if not nextGame.selectPiece(piece):
+                        print("FAILED TO SELECT")
 
-                nextGame = game.copy()
-                nextGame.selectPiece(piece)
-
-                score, _, _ = self.miniMax(nextGame, depth-1, not turn, True)
+                    score, _, _, moves = self.miniMax(nextGame, depth-1, not turn, True)
                 if turn:
                     score *= -1
 
                 if score > bestScore:
                     bestScore = score
                     bestPiece = piece
-            if gameHash in self.memoTable:
-                self.memoTable[fullHash][1] = bestPiece
-            return bestScore, bestPiece, None
+                    bestMoves = moves
+            moveStr = str(bestPiece) + "->" + bestMoves
+            return bestScore, bestPiece, None, moveStr
 
     def eval(self, game: QuartoGame, turn: bool):
         if game.checkWin():
