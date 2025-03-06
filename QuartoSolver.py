@@ -1,36 +1,57 @@
 
 from QuartoGame import QuartoGame
 from QuartoAI import QuartoAI
-from MiniMaxAI import MiniMaxAI
+from QuartoMiniMaxSolver import QuartoMiniMaxSolver
 
+import time
+
+gamesToTest = 1
+currGame = 1
+piecesToStart = 8
+durations = []
 
 #===== Simple AI playing against itself. 
 # Just a sanity check for seeing that everything is working.
 quit = False
 twistCount = 1
 while not quit:
+    print(f'----------------  Game:{currGame} --------------------')
+    startTime = time.time()
     g = QuartoGame(twistCount=twistCount)
-    #ai = QuartoAI()
-    ai = MiniMaxAI()
-    ai.transposition_table.clear()
+    g.populateBoard(piecesToStart)
+    ai = QuartoMiniMaxSolver(depth=6)
 
-    while not g.checkWin() and len(g.getRemainingPieces()) > 0:
-        input("\nPress Enter...")
-        for _ in range(twistCount):
-            if len(g.getRemainingPieces()) < 1:
-                break
-            ai.choosePiece(g)
-        ai.placePiece(g)
-        g.printGame()
     
-    print('\n\n')
-    if g.checkWin():
-        print('WINNER!')
-    else:
-        print("Stalemate :(")
-    
-    print()
+    ai.choosePiece(g)
+    timeElapsed = time.time() - startTime
+    print(f'Found piece in {timeElapsed:.03f} seconds.')
+    durations.append(timeElapsed)
+    startTime = time.time()
 
-    c = input('\nPlay again? y/n  ')
-    if c != 'y':
-        quit = True
+    # while not g.checkWin() and len(g.getRemainingPieces()) > 0 and len(g.getAvaliableSquares()) > 0:
+    #     for _ in range(twistCount):
+    #         if len(g.getRemainingPieces()) < 1:
+    #             break
+    #         ai.choosePiece(g)
+    #     ai.placePiece(g)
+    
+    ai.placePiece(g)
+    timeElapsed = time.time() - startTime
+    print(f'Found move in {timeElapsed:.03f} seconds.')
+    durations[-1] += timeElapsed
+
+
+    #if g.checkWin():
+    #    print('WINNER!')
+    #else:
+        #print("Stalemate :(")
+    
+    if currGame >= gamesToTest:
+        break
+    currGame += 1
+
+print(f'Average Duration: {sum(durations) / gamesToTest:.03f}')
+
+    #c = input('\nPlay again? y/n  ')
+    #if c != 'y':
+    #    quit = True
