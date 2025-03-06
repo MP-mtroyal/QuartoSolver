@@ -1,8 +1,7 @@
 
 from QuartoGame import QuartoGame
 from QuartoAI import QuartoAI
-from MiniMaxAI import MiniMaxAI
-from MiniMaxAI2 import MiniMaxSolver
+from QuartoMiniMaxSolver import QuartoMiniMaxSolver
 
 import time
 
@@ -20,7 +19,7 @@ while not quit:
     startTime = time.time()
     g = QuartoGame(twistCount=twistCount)
     g.populateBoard(piecesToStart)
-    ai = MiniMaxSolver(depth=6)
+    ai = QuartoMiniMaxSolver(depth=6)
 
     
     ai.choosePiece(g)
