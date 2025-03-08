@@ -14,12 +14,15 @@ durations = []
 # Just a sanity check for seeing that everything is working.
 quit = False
 twistCount = 1
+
+print(time.process_time_ns())
+
 while not quit:
     print(f'----------------  Game:{currGame} --------------------')
     startTime = time.time()
     g = QuartoGame(twistCount=twistCount)
     g.populateBoard(piecesToStart)
-    ai = QuartoMiniMaxSolver(depth=3)
+    ai = QuartoMiniMaxSolver(depth=9)
 
     
     ai.choosePiece(g)
