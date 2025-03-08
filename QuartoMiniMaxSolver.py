@@ -119,9 +119,11 @@ class QuartoMiniMaxSolver:
 
             self.profiler.log("Hashing")
             gameHash = cannonGame.hashBoard()
+
+            self.profiler.log("Storing Hash")
+            self.cannonTable[basicGameHash] = gameHash
             self.profiler.pause()
 
-            self.cannonTable[basicGameHash] = gameHash
 
         if placingPiece:
             """ Place Piece
@@ -161,6 +163,9 @@ class QuartoMiniMaxSolver:
                 self.profiler.pause()
 
                 score, _, _, moves = self.miniMax(nextGame, depth-1, turn, False)
+
+                self.profiler.unpause()
+                self.profiler.log("Basic Math")
                 if not turn:
                     score *= -1
 
@@ -168,8 +173,10 @@ class QuartoMiniMaxSolver:
                     bestScore = score
                     bestSquare = square
                     bestMoves = moves
+                self.profiler.pause()
+
             self.profiler.unpause()
-            self.profiler.log("Hashing")
+            self.profiler.log("Storing Hash")
             moveStr = f'({bestSquare.x},{bestSquare.y})' + "->" + bestMoves
             self.memoTable[pieceHash] = [bestScore, currPiece, bestSquare, moveStr]
             self.profiler.pause()
@@ -193,8 +200,10 @@ class QuartoMiniMaxSolver:
             self.profiler.log("Getting Remaining Pieces")
             for piece in game.getRemainingPieces():
                 
+                self.profiler.log("Checking Memo")
                 pieceHash = (gameHash, piece)
                 if pieceHash in self.memoTable:
+                    self.profiler.log("Reading Memo")
                     score, _, square, moves = self.memoTable[pieceHash]
                     self.memoedCounter += 1
                 else:
@@ -207,6 +216,9 @@ class QuartoMiniMaxSolver:
                     self.profiler.pause()
 
                     score, _, square, moves = self.miniMax(nextGame, depth-1, not turn, True)
+
+                self.profiler.unpause()
+                self.profiler.log("Basic Math")
                 if turn:
                     score *= -1
 
@@ -215,8 +227,10 @@ class QuartoMiniMaxSolver:
                     bestPiece  = piece
                     bestMoves  = moves
                     bestSquare = square
+                self.profiler.pause()
 
-            self.profiler.log("Hashing")
+            self.profiler.unpause()
+            self.profiler.log("Storing Hash")
             moveStr = str(bestPiece) + "->" + bestMoves
             pieceHash = (gameHash, None) #Best possible score, no piece selected
             self.memoTable[pieceHash] = [bestScore, bestPiece, bestSquare, moveStr]

@@ -49,7 +49,7 @@ class Profiler:
         titleHeader = "  --  Title "
         while len(titleHeader) < self.longestTitle: titleHeader += " "
         print(f'{titleHeader}\t|\tTotal Time\t|\tCount')
-        print("-------------------------------------------------------")
+        print("----------------------------------------------------------------------------------------")
         acountedTime = 0
         for title in self.profiles.keys():
             paddedTitle = title
