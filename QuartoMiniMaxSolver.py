@@ -1,5 +1,7 @@
 from QuartoGame import QuartoGame
 from BasicQuartoCannon import BasicQuartoCannon
+from GreatQuartoCannon import GreatQuartoCannon
+from QuartoCannon import QuartoCannon
 import math
 
 """
@@ -19,7 +21,12 @@ class QuartoMiniMaxSolver:
     def __init__(self, depth=16):
         self.memoTable = {}
         self.depth = depth
-        self.cannonizer = BasicQuartoCannon()
+        #self.cannonizer = QuartoCannon()
+        #self.cannonizer = BasicQuartoCannon()
+        self.cannonizer = GreatQuartoCannon()
+
+        self.exploredCounter = 0
+        self.memoedCounter = 0
 
 
     """ placePiece()
@@ -36,6 +43,7 @@ class QuartoMiniMaxSolver:
         score, _, square, moves = self.miniMax(game, self.depth, True, True)
         print("Placement Path: ", end="")
         print(moves)
+        print(f'Explored: {self.exploredCounter} | Memoed: {self.memoedCounter} | MemoTable: {len(self.memoTable.keys())}')
         print()
         if square is not None:
             game.placePiece(game.selectedPieces[0], square)
@@ -54,6 +62,7 @@ class QuartoMiniMaxSolver:
         score, piece, _, moves = self.miniMax(game, self.depth, True, False)
         print("Placement Path: ", end="")
         print(moves)
+        print(f'Explored: {self.exploredCounter} | Memoed: {self.memoedCounter} | MemoTable: {len(self.memoTable.keys())}')
         print()
         if piece is not None:
             game.selectPiece(piece)
@@ -87,7 +96,12 @@ class QuartoMiniMaxSolver:
             return gameState, None, None, " Score:" + str(gameState)
         cannonGame = self.cannonizer.cannonizeGame(game)
         gameHash = cannonGame.hashBoard()
-        
+        #gameHash = game.hashBoard()
+
+        print("==============================================")
+        game.printGame()
+        cannonGame.printGame()
+        print("----------------------------------------------")
 
         if placingPiece:
             """ Place Piece
@@ -104,10 +118,10 @@ class QuartoMiniMaxSolver:
             pieceHash = (gameHash, currPiece)
             if pieceHash in self.memoTable:
                 score, move, square, moveStr = self.memoTable[pieceHash]
-                #if not turn:
-                #    score *= -1
+                self.memoedCounter += 1
                 return score, move, square, moveStr
             
+            self.exploredCounter += 1
             for square in game.getAvaliableSquares():
                 nextGame = game.copy()
 
@@ -130,28 +144,39 @@ class QuartoMiniMaxSolver:
             Handles selecting a piece for the opponent. Iterates over all remaining pieces
             and recursively evaluates the score for each choice.
             """
-            bestMoves, bestPiece, bestScore = None, None, -math.inf
+            pieceHash = (gameHash, None)
+            if pieceHash in self.memoTable:
+                self.memoedCounter += 1
+                return self.memoTable[pieceHash]
+
+            bestMoves, bestSquare, bestPiece, bestScore = None, None, None, -math.inf
             moves = None
 
             for piece in game.getRemainingPieces():
                 pieceHash = (gameHash, piece)
                 if pieceHash in self.memoTable:
-                    score, _, _, moves = self.memoTable[pieceHash]
+                    score, _, square, moves = self.memoTable[pieceHash]
+                    self.memoedCounter += 1
                 else:
                     nextGame = game.copy()
                     if not nextGame.selectPiece(piece):
                         print("FAILED TO SELECT")
 
-                    score, _, _, moves = self.miniMax(nextGame, depth-1, not turn, True)
+                    score, _, square, moves = self.miniMax(nextGame, depth-1, not turn, True)
                 if turn:
                     score *= -1
 
                 if score > bestScore:
-                    bestScore = score
-                    bestPiece = piece
-                    bestMoves = moves
+                    bestScore  = score
+                    bestPiece  = piece
+                    bestMoves  = moves
+                    bestSquare = square
             moveStr = str(bestPiece) + "->" + bestMoves
-            return bestScore, bestPiece, None, moveStr
+            pieceHash = (gameHash, None) #Best possible score, no piece selected
+            self.memoTable[pieceHash] = [bestScore, bestPiece, bestSquare, moveStr]
+
+            self.exploredCounter += 1
+            return bestScore, bestPiece, square, moveStr
 
 
     """

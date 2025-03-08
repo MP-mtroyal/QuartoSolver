@@ -7,7 +7,7 @@ import time
 
 gamesToTest = 1
 currGame = 1
-piecesToStart = 8
+piecesToStart = 0
 durations = []
 
 #===== Simple AI playing against itself. 
@@ -19,7 +19,7 @@ while not quit:
     startTime = time.time()
     g = QuartoGame(twistCount=twistCount)
     g.populateBoard(piecesToStart)
-    ai = QuartoMiniMaxSolver(depth=6)
+    ai = QuartoMiniMaxSolver(depth=3)
 
     
     ai.choosePiece(g)
@@ -28,30 +28,14 @@ while not quit:
     durations.append(timeElapsed)
     startTime = time.time()
 
-    # while not g.checkWin() and len(g.getRemainingPieces()) > 0 and len(g.getAvaliableSquares()) > 0:
-    #     for _ in range(twistCount):
-    #         if len(g.getRemainingPieces()) < 1:
-    #             break
-    #         ai.choosePiece(g)
-    #     ai.placePiece(g)
-    
-    ai.placePiece(g)
-    timeElapsed = time.time() - startTime
-    print(f'Found move in {timeElapsed:.03f} seconds.')
-    durations[-1] += timeElapsed
+    # ai.placePiece(g)
+    # timeElapsed = time.time() - startTime
+    # print(f'Found move in {timeElapsed:.03f} seconds.')
+    # durations[-1] += timeElapsed
 
-
-    #if g.checkWin():
-    #    print('WINNER!')
-    #else:
-        #print("Stalemate :(")
     
     if currGame >= gamesToTest:
         break
     currGame += 1
 
 print(f'Average Duration: {sum(durations) / gamesToTest:.03f}')
-
-    #c = input('\nPlay again? y/n  ')
-    #if c != 'y':
-    #    quit = True
