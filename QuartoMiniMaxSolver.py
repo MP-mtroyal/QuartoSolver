@@ -5,6 +5,8 @@ from QuartoCannon import QuartoCannon
 import math
 from Profiler import Profiler
 
+import time
+
 """
 MiniMaxSolver implements a Minimax algorithm with memoization to solve the game of Quarto.
 It handles both placing a piece and choosing a piece for the opponent, considering a 
@@ -107,23 +109,31 @@ class QuartoMiniMaxSolver:
         basicGameHash = game.hashBoard()
 
         self.profiler.log("Checking Memo")
-        if basicGameHash in self.cannonTable:
+        # if basicGameHash in self.cannonTable:
 
-            self.profiler.log("Reading Memo")
-            gameHash = self.cannonTable[basicGameHash]
-            self.profiler.pause()
+        #     self.profiler.log("Reading Memo")
+        #     gameHash = self.cannonTable[basicGameHash]
+        #     self.profiler.pause()
 
-        else:
-            self.profiler.log("Cannonizing")
-            cannonGame = self.cannonizer.cannonizeGame(game)
+        # print("------------------------")
+        #else:
+        # game.printGame()
+        # time.sleep(0.01)
+        self.profiler.log("Cannonizing")
+        #cannonGame = self.cannonizer.cannonizeGame(game)
+        game = self.cannonizer.cannonizeGame(game)
 
-            self.profiler.log("Hashing")
-            gameHash = cannonGame.hashBoard()
+        self.profiler.log("Hashing")
+        #gameHash = cannonGame.hashBoard()
+        gameHash = game.hashBoard()
+        
 
-            self.profiler.log("Storing Hash")
-            self.cannonTable[basicGameHash] = gameHash
-            self.profiler.pause()
-
+        # self.profiler.log("Storing Hash")
+        # self.cannonTable[basicGameHash] = gameHash
+        self.profiler.pause()
+        # game.printGame()
+        # time.sleep(0.01)
+        # print("=============================")
 
         if placingPiece:
             """ Place Piece

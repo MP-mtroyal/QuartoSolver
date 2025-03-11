@@ -176,4 +176,5 @@ class GreatQuartoCannon(QuartoCannon):
         for board in cBoard:
             toBeEval.append(self.boardXOR(board, self.getXOR(board)))
         game.board = self.best_board(toBeEval)
+        game.xorPieces(self.getXOR(game.board))
         return game

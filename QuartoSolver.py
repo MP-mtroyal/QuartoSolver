@@ -22,7 +22,7 @@ while not quit:
     startTime = time.time()
     g = QuartoGame(twistCount=twistCount)
     g.populateBoard(piecesToStart)
-    ai = QuartoMiniMaxSolver(depth=8)
+    ai = QuartoMiniMaxSolver(depth=4)
 
     
     ai.choosePiece(g)

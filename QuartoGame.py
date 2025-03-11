@@ -256,3 +256,16 @@ class QuartoGame:
             print(", ".join(pieceToBinaryString(piece) for piece in remaining))
         else:
             print("No remaining pieces.")
+
+    def xorPieces(self, xorPiece):
+        if xorPiece < 0 or xorPiece >= len(self.remainingPieces):
+            return
+        for i in range(len(self.selectedPieces)):
+            self.selectedPieces[i] = self.selectedPieces[i] ^ xorPiece
+
+        newRemPieces = [0] * len(self.remainingPieces)
+        for i in range(len(self.remainingPieces)):
+            if self.remainingPieces[i] > 0:
+                index = i ^ xorPiece
+                newRemPieces[index] = 1
+        self.remainingPieces = newRemPieces
