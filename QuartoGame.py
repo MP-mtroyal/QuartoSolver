@@ -15,7 +15,7 @@ class QuartoGame:
         self.selectedPieces  = []
         self.board           = - np.ones(self.dims)
         self.remainingPieces = [1 for i in range(self.dims[0] * self.dims[1])]
-
+        self.last_move       = None
         self.undoMemLength = undoMemLength
         self.undoStack = []
 
@@ -105,6 +105,7 @@ class QuartoGame:
         for piece in self.selectedPieces:
             self.remainingPieces[piece] = 1
         self.selectedPieces = []
+        self.last_move = (index.x, index.y)
 
         return True
 
@@ -130,36 +131,41 @@ class QuartoGame:
     # Returns true if the board has a winning state on it.
     # Assumes the board is square
     def checkWin(self) -> bool:
+        if self.last_move is None:
+            return False  # No move has been made yet
+
+        last_x, last_y = self.last_move
         boardSize = self.board.shape[0]
-        #Check rows
-        for i in range(boardSize):
-            if self.checkFeatureList(self.board[i]):
-                return True
-        #Check columns
-        cols = np.transpose(self.board)
-        for i in range(boardSize):
-            if self.checkFeatureList(cols[i]):
-                return True
-        #Check Diagonal
-        if self.checkFeatureList([self.board[i, i] for i in range(boardSize)]):
+
+        if self.checkFeatureList(self.board[last_x]): # Check row
             return True
-        if self.checkFeatureList([self.board[i, boardSize - (i+1)] for i in range(boardSize)]):
+        if self.checkFeatureList(self.board[:, last_y]): # Check column
             return True
+        if last_x == last_y: # Check main diagonal if (x == y)
+            if self.checkFeatureList([self.board[i, i] for i in range(boardSize)]):
+                return True
+        if last_x + last_y == boardSize - 1: # Check anti-diagonal if (x + y == boardSize - 1)
+            if self.checkFeatureList([self.board[i, boardSize - 1 - i] for i in range(boardSize)]):
+                return True
 
         return False
+
 
 #========= CheckFeatureList ====================
 #   checks a features list of ints to look for any common trait.
 #   Returns true if any trait is share across all features.
-    def checkFeatureList(self, feats:list[int]) -> bool:
-        if min(feats) < 0:
-            return False
-        andCmp = int(math.pow(2, 16) - 1)
-        orCmp  = 0
+    def checkFeatureList(self, feats: list[int]) -> bool:
+        andCmp = 0xFFFF
+        orCmp = 0
+
         for feat in feats:
-            andCmp = andCmp & int(feat)
-            orCmp  = orCmp  | int(feat)
-        return andCmp != 0 or int(math.pow(2, len(feats)) - 1) - orCmp != 0
+            if feat < 0:
+                return False
+            feat = int(feat)
+            andCmp &= feat
+            orCmp |= feat
+            
+        return andCmp != 0 or ((1 << len(feats)) - 1) - orCmp != 0
 
 
 #========== Prints game in a human readable format =========

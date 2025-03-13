@@ -106,7 +106,7 @@ class QuartoMiniMaxSolver:
 
         self.profiler.unpause()
         self.profiler.log("Hashing")
-        basicGameHash = game.hashBoard()
+        #basicGameHash = game.hashBoard()
 
         self.profiler.log("Checking Memo")
         # if basicGameHash in self.cannonTable:
