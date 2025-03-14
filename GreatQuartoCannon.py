@@ -3,6 +3,8 @@ from QuartoCannon import QuartoCannon
 from QuartoDataTypes import IntVector2
 import numpy as np
 
+import FastCannon
+
 class GreatQuartoCannon(QuartoCannon):
     def __init__(self):
         super().__init__()
@@ -104,19 +106,6 @@ class GreatQuartoCannon(QuartoCannon):
                 addition = val << shift
             result += addition
         return result
-    
-    def badBoardEval(self, board):
-        digits = 4
-        occupied = 0
-        values = 0
-        for y in range(board.shape[0]):
-            for x in range(board.shape[1]):
-                if board[x, y] >= 0:
-                    values = (values << digits) + int(board[x,y])
-                    occupied += 1
-                occupied = occupied << 1
-        occupied = occupied >> 1
-        return (values << (digits ** 2)) + occupied
 
     #======= getCanditateBoards ==========
     # Separates a list of 4x4 boards into candidate lists:
@@ -158,6 +147,8 @@ class GreatQuartoCannon(QuartoCannon):
         mask = (new_arr != -1)           # Boolean mask for elements not equal to -1.
         new_arr[mask] = new_arr[mask] ^ value  # Apply XOR on masked elements.
         return new_arr
+    
+
 
     #======= best_board ==========
     # Returns the board with the minimum evaluation value from a list of boards.
@@ -169,12 +160,102 @@ class GreatQuartoCannon(QuartoCannon):
     # and XOR normalization, then returns the best board based on evaluation.
     def cannonizeGame(self, game):
         game = game.copy()
-        gameBoard = game.board.astype(np.int32)
-        transformations = self.d4Tranformation(self.getBaseStruct(gameBoard))
-        cBoard = self.getCanditateBoards(transformations)
-        toBeEval = []
-        for board in cBoard:
-            toBeEval.append(self.boardXOR(board, self.getXOR(board)))
-        game.board = self.best_board(toBeEval)
-        game.xorPieces(self.getXOR(game.board))
+
+        xorPiece = FastCannon.cannonize(game.board)
+        game.xorPieces(xorPiece)
+
+        swapped1Success = self.swapBitsToPos(game, 0, 1)
+        if swapped1Success:
+            swapped2Success = self.swapBitsToPos(game, 1, 1)
+            if swapped2Success:
+                swapped3Success = self.swapBitsToPos(game, 2, 1)
+            else:
+                swapped3Success = self.swapBitsToPos(game, 1, 2)
+                if swapped3Success:
+                    self.swapBitsToPos(game, 2, 1)
+        else:
+            swapped2Success = self.swapBitsToPos(game, 0, 2)
+            if swapped2Success:
+                self.swapBitsToPos(game, 1, 2)
+                swapped3Success = self.swapBitsToPos(game, 2, 1)
+            else:
+                swapped3Success = self.swapBitsToPos(game, 0, 3)
+                if swapped3Success:
+                    self.swapBitsToPos(game, 1, 2)
+                    self.swapBitsToPos(game, 2, 1)
+
         return game
+
+        #Python Cannoize logic, kept commented for testing and reference
+        # gameBoard = game.board.astype(np.int32)
+        # transformations = self.d4Tranformation(self.getBaseStruct(gameBoard))
+        # cBoard = self.getCanditateBoards(transformations)
+        # toBeEval = []
+        # for board in cBoard:
+        #     toBeEval.append(self.boardXOR(board, self.getXOR(board)))
+        # game.board = self.best_board(toBeEval)
+        # game.xorPieces(self.getXOR(game.board))
+        # return game
+
+    
+    # mask is an int with 2 bits active, these 2 are the bits to swap
+    # eg. 0101 swaps position 2 and 0
+    # if mask does not have exactly 2 bits active, the results are
+    
+    def maskedBitSwap(self, game: QuartoGame, mask):
+        if mask < 0: return
+        for i in range(len(game.selectedPieces)):
+            piece = game.selectedPieces[i]
+            if piece & mask != mask and piece & mask != 0:
+                game.selectedPieces[i] = piece ^ mask
+
+        newRem = [0] * len(game.remainingPieces)
+        for i in range(len(newRem)):
+            if game.remainingPieces[i] == 1:
+                if i & mask != mask and i & mask != 0:
+                    newRem[i ^ mask] = 1
+                else:
+                    newRem[i] = 1
+        game.remainingPieces = newRem
+
+    # Finds the first piece on the board that meets the criteria 
+    #   -has exactly thresh number of bits as 1s at and after bitPos
+    #   swaps the first bit found into bitPos. If the first 1 is already at
+    #   bitPos, nothing happens.
+    #   After swapping the given bit, the same swap operation is applied to all
+    #   other pieces, on the board, selection, and remaining.
+
+    def swapBitsToPos(self, game:QuartoGame, bitPos: int, thresh: int) -> bool:
+        posMask = 15 - ((2 ** bitPos) - 1)
+        swapMask = -1
+        board = game.board
+        for y in range(board.shape[0]):
+            for x in range(board.shape[1]):
+                if board[x,y] > 0:
+                    maskedVal = board[x,y] & posMask
+                    if maskedVal > 0 and bin(maskedVal).count('1') == thresh:
+                        shiftCount = 0
+                        while maskedVal % 2 == 0:
+                            maskedVal = maskedVal >> 1
+                            shiftCount += 1
+                        if shiftCount == bitPos: # position already has a 1
+                            return True
+                        else:
+                            swapMask = 2 ** shiftCount
+                            swapMask += 2 ** bitPos
+                        break
+            if swapMask >= 0: break
+        
+        if swapMask < 0: return False
+
+
+        for y in range(board.shape[0]):
+            for x in range(board.shape[1]):     
+                piece = board[x,y]
+                if piece > 0 and piece & swapMask != swapMask and piece & swapMask != 0:
+                    board[x,y] = piece ^ swapMask
+
+        self.maskedBitSwap(game, swapMask)
+
+        return True
+

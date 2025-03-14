@@ -5,6 +5,8 @@ import math
 from QuartoDataTypes import IntVector2
 import random
 
+import FastCannon
+
 random.seed(3)
 
 class QuartoGame:
@@ -12,12 +14,20 @@ class QuartoGame:
         self.twistCount      = twistCount
         self.verbose         = verbose
         self.dims            = IntVector2(4, 4) #hardcoded to 4x4 for now
-        self.selectedPieces  = []
-        self.board           = - np.ones(self.dims)
-        self.remainingPieces = [1 for i in range(self.dims[0] * self.dims[1])]
+        #self.selectedPieces  = np.array([], dtype=np.int32)
+        self.selectedPieces = []
+        self.board           = - np.ones(self.dims, dtype=np.int32)
+        #self.remainingPieces = [1 for i in range(self.dims[0] * self.dims[1])]
+        self.remainingPieces = np.ones([self.dims[0] * self.dims[1]],dtype=np.uint8)
 
-        self.undoMemLength = undoMemLength
-        self.undoStack = []
+        self.selectedPieceCount  = 0
+        self.avaliableSquareCount = self.dims[0] * self.dims[1]
+        self.remainingPieceCount = self.dims[0] * self.dims[1]
+
+        self.undoMemLength  = undoMemLength
+        self.undoStack      = []
+        self.isWinningState = False
+        self.last_move = None
 
 #======= Copies data of this game, and returns a copy ==========
 #   dest (QuartoGame): If dst is specified, data is copied into this the 
@@ -27,9 +37,15 @@ class QuartoGame:
         g                 = dest if dest is not None else QuartoGame(self.twistCount, self.verbose)
         g.dims            = IntVector2(self.dims.x, self.dims.y)
         g.selectedPieces  = [piece for piece in self.selectedPieces]
+        #g.selectedPieces  = np.copy(self.selectedPieces)
         g.board           = np.copy(self.board)
-        g.remainingPieces = [piece for piece in self.remainingPieces]
+        #g.remainingPieces = [piece for piece in self.remainingPieces]
+        g.remainingPieces = np.copy(self.remainingPieces)
         g.undoMemLength   = self.undoMemLength
+        g.isWinningState  = self.isWinningState
+        g.avaliableSquareCount = self.avaliableSquareCount
+        g.remainingPieceCount = self.remainingPieceCount
+        g.selectedPieceCount  = self.selectedPieceCount
         # Undo stack is not copied, to avoid exploding memory
         return g
 
@@ -74,9 +90,21 @@ class QuartoGame:
 
         self.logGameState()
         self.selectedPieces.append(piece)
+        #self.selectedPieces = np.append(self.selectedPieces, piece)
         self.remainingPieces[piece] = 0
 
+        self.selectedPieceCount  += 1
+        self.remainingPieceCount -= 1
+
         return True
+    
+    def deselectAll(self):
+        for piece in self.selectedPieces:
+            self.remainingPieceCount += 1
+            self.remainingPieces[piece] = 1
+        #self.selectedPieces  = np.array([], dtype=np.int32)
+        self.selectedPieces = []
+        self.selectedPieceCount = 0
 
 
 #====== Places a given piece at a given index ============
@@ -100,13 +128,56 @@ class QuartoGame:
             return False
 
         self.logGameState()
-        self.board[index] = piece
+        #self.board[index] = piece
+        self.isWinningState = FastCannon.placePiece(self.board, index.x, index.y, piece)
+        #pieceIndex = np.where(self.selectedPieces == piece)[0][0]
+        #self.selectedPieces = np.delete(self.selectedPieces, pieceIndex)
         self.selectedPieces.pop(self.selectedPieces.index(piece))
-        for piece in self.selectedPieces:
-            self.remainingPieces[piece] = 1
-        self.selectedPieces = []
+        self.avaliableSquareCount -= 1
+        self.deselectAll()
+
+        #self.last_move = (index.x, index.y)
+        #self.isWinningState = None # No longer know if is winning state
 
         return True
+    
+    # Removes piece at a given index, if one is there. 
+    # Adds piece back to selected
+    def removePiece(self, index:IntVector2) -> bool:
+        if index.x < 0 or index.y < 0 or index.x >= self.dims.x or index.y >= self.dims.y:
+            if self.verbose:
+                print(f'Cannot place piece at invalid index X:{index[0]} Y:{index.y}')
+            return False
+        if self.board[index] < 0:
+            if self.verbose:
+                print(f'No piece to remove at this index.')
+            return False
+        #self.selectedPieces = np.append(self.selectedPieces, self.board[index])
+        self.selectedPieces.append(self.board[index])
+        self.selectedPieceCount += 1
+        self.board[index] = -1
+        self.avaliableSquareCount += 1
+    
+    def updateWinStatus(self, index):
+        if self.isWinningState: return
+        row = self.board[:, index.y]
+        if self.checkFeatureList(row):
+            self.isWinningState = True
+            return
+        col = self.board[index.x]
+        if self.checkFeatureList(col):
+            self.isWinningState = True
+            return
+        if index.x == index.y:
+            diag = [self.board[i, i] for i in range(self.board.shape[0])]
+            if self.checkFeatureList(diag):
+                self.isWinningState = True
+            return
+        elif index.x + index.y == self.board.shape[0] - 1:
+            diag = [self.board[i, (self.board.shape[0] - 1) - i] for i in range(self.board.shape[0])]
+            if self.checkFeatureList(diag):
+                self.isWinningState = True
+            return
 
 #====== Get Avaliable Squares ====================
 #   Gets a list of squares that are avaliable to be played on
@@ -130,6 +201,11 @@ class QuartoGame:
     # Returns true if the board has a winning state on it.
     # Assumes the board is square
     def checkWin(self) -> bool:
+        if self.isWinningState is not None:
+            return self.isWinningState
+        return False
+
+    def checkWinFull(self):
         boardSize = self.board.shape[0]
         #Check rows
         for i in range(boardSize):
@@ -147,7 +223,6 @@ class QuartoGame:
             return True
 
         return False
-
 #========= CheckFeatureList ====================
 #   checks a features list of ints to look for any common trait.
 #   Returns true if any trait is share across all features.
@@ -198,18 +273,52 @@ class QuartoGame:
     # Considers only what spaces are occupied, and what they are occupied by
     # Does not consider selected pieces or remaining pieces
     # The resulting number can be up to the order of 2^80
+    # def hashBoard(self):
+    #     digits = int(math.log2(len(self.remainingPieces)))
+    #     occupied = 0
+    #     values = 0
+    #     for y in range(self.dims.y):
+    #         for x in range(self.dims.x):
+    #             if self.board[x, y] >= 0:
+    #                 values = (values << digits) + int(self.board[x,y])
+    #                 occupied += 1
+    #             occupied = occupied << 1
+    #     occupied = occupied >> 1
+    #     return (values << len(self.remainingPieces)) + occupied
+    # -String interpretation, for bit overflow safety
     def hashBoard(self):
-        digits = int(math.log2(len(self.remainingPieces)))
-        occupied = 0
-        values = 0
+        digits = 4
+        occupied = ""
+        values = ""
         for y in range(self.dims.y):
             for x in range(self.dims.x):
                 if self.board[x, y] >= 0:
-                    values = (values << digits) + int(self.board[x,y])
-                    occupied += 1
-                occupied = occupied << 1
-        occupied = occupied >> 1
-        return (values << len(self.remainingPieces)) + occupied
+                    s = bin(int(self.board[x,y]))[2:]
+                    while len(s) < digits: s = '0' + s
+                    values += s
+                    occupied += '1'
+                else:
+                    occupied += '0'
+        return values + occupied
+    
+
+    #hard coded to board size of 4x4 for now
+    def loadFromHash(self, hash):
+        occupied = hash[-16:]
+        print(occupied)
+        pieceValues = hash[:-16]
+        print(pieceValues)
+        pieces = [int(hash[i:i+4], 2) for i in range(0, len(pieceValues), 4)]
+        print(pieces)
+        for i in range(len(self.remainingPieces)):
+            self.remainingPieces[i] = 0 if i in pieces else 1
+        for y in range(self.dims.y):
+            for x in range(self.dims.x):
+                if occupied[y*4 + x] == '1':
+                    self.board[IntVector2(x,y)] = pieces.pop(0)
+                else:
+                    self.board[IntVector2(x,y)] = -1
+        self.isWinningState = self.checkWinFull()
 
     """
     Populates the board with a given number of pieces (0-8) ensuring no winning row/col/diag exists.
@@ -257,6 +366,7 @@ class QuartoGame:
         else:
             print("No remaining pieces.")
 
+    # Performs XOR operation using the given XORpiece on the selected and remaining pieces
     def xorPieces(self, xorPiece):
         if xorPiece < 0 or xorPiece >= len(self.remainingPieces):
             return
@@ -269,3 +379,4 @@ class QuartoGame:
                 index = i ^ xorPiece
                 newRemPieces[index] = 1
         self.remainingPieces = newRemPieces
+
