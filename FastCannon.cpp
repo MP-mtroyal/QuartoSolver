@@ -1,6 +1,5 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include <cuda_runtime.h>
 
 #include <math.h>
 #include <stdio.h>
@@ -469,7 +468,6 @@ bool PlacePiece(py::array_t<int> board, int x, int y, int piece){
 PYBIND11_MODULE(FastCannon, m) {
     m.def("cannonize", &cannonize, "Fast Quarto Cannonization");
     m.def("placePiece", &PlacePiece, "Place Piece Quickly");
-    m.def("ApplyFeatureSwaps", &ApplyFeatureSwaps, "Swap Features to the leftmost");
 }
 
 

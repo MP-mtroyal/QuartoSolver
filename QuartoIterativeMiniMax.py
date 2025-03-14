@@ -296,13 +296,14 @@ class QuartoIterativeMiniMax:
                 return score, move, square, moveStr
             
             # ============================================================
-            if depth != 0:
-                if self.bredthCount[depth] >= self.bredthMax:
-                    return 0, 15, IntVector2(0, 0), "Dummy"
-                self.bredthCount[depth] += 1
+            self.profiler.log("Basic Math")
+            if self.bredthMax is not None:
+                if depth != 0:
+                    if self.bredthCount[depth] >= self.bredthMax:
+                        return 0, 15, IntVector2(0, 0), "Dummy"
+                    self.bredthCount[depth] += 1
             # ============================================================
             
-            self.profiler.log("Basic math")
             self.exploredCounter += 1
 
             self.profiler.log("Avaliable Squares")
@@ -353,13 +354,14 @@ class QuartoIterativeMiniMax:
                 return score, move, square, moveStr
             
             # ============================================================
-            if depth != 0:
-                if self.bredthCount[depth] >= self.bredthMax:
-                    return 0, 15, IntVector2(0, 0), "Dummy"
-                self.bredthCount[depth] += 1
+            self.profiler.log("Basic Math")
+            if self.bredthMax is not None:
+                if depth != 0:
+                    if self.bredthCount[depth] >= self.bredthMax:
+                        return 0, 15, IntVector2(0, 0), "Dummy"
+                    self.bredthCount[depth] += 1
             # ============================================================
 
-            self.profiler.log("Basic Math")
             bestMoves, bestSquare, bestPiece, bestScore = None, None, None, -math.inf
             moves = None
 

@@ -21,7 +21,7 @@ class QuartoMiniMaxSolver:
     Parameters:
         depth (int): Maximum search depth minimax will go to. (32 for full game)
     """
-    def __init__(self, depth=16):
+    def __init__(self, depth=16, maxBredth=None):
         self.memoTable = {}
         self.cannonTable = {}
         self.depth = depth
@@ -31,6 +31,9 @@ class QuartoMiniMaxSolver:
         self.profiler   = Profiler()
         self.exploredCounter = 0
         self.memoedCounter = 0
+
+        self.maxBredth = maxBredth
+        self.bredthCounts = [0] * 33
 
 
     """ placePiece()
@@ -46,7 +49,7 @@ class QuartoMiniMaxSolver:
     def placePiece(self, game: QuartoGame) -> None:
         prevMemLength = game.undoMemLength
         game.undoMemLength = 0
-
+        self.bredthCounts = [0] * 33
         score, _, square, moves = self.miniMax(game, self.depth, True, True)
         self.profiler.pause()
         print("Placement Path: ", end="")
@@ -70,6 +73,7 @@ class QuartoMiniMaxSolver:
     def choosePiece(self, game: QuartoGame) -> None:
         prevMemLength = game.undoMemLength
         game.undoMemLength = 0
+        self.bredthCounts = [0] * 33
         self.profiler.fullReset()
         score, piece, _, moves = self.miniMax(game, self.depth, True, False)
         self.profiler.pause()
@@ -106,6 +110,7 @@ class QuartoMiniMaxSolver:
             turn: bool,
             placingPiece: bool
     ):
+
         self.profiler.log("Checking Depth")
         if depth == 0 or game.checkWin() or game.avaliableSquareCount == 0 or game.remainingPieceCount <= 0:
 
@@ -162,6 +167,11 @@ class QuartoMiniMaxSolver:
                 return score, move, square, moveStr
             
             self.profiler.log("Basic Math")
+            if self.maxBredth is not None:
+                if self.bredthCounts[depth] >= self.maxBredth:
+                    return 0, None, None, "Dummy Return"
+                self.bredthCounts[depth] += 1
+            
             self.exploredCounter += 1
 
             self.profiler.log("Avaliable Squares")
@@ -189,6 +199,9 @@ class QuartoMiniMaxSolver:
                     bestSquare = square
                     bestMoves = moves
 
+                if bestScore > 0:
+                    break
+
             self.profiler.log("Storing Hash")
             moveStr = f'({bestSquare.x},{bestSquare.y})' + "->" + bestMoves
             self.memoTable[pieceHash] = [bestScore, currPiece, bestSquare, moveStr]
@@ -213,8 +226,13 @@ class QuartoMiniMaxSolver:
                 
                 self.profiler.log("Return")
                 return score, move, square, moveStr
-
+            
             self.profiler.log("Basic Math")
+            if self.maxBredth is not None:
+                if self.bredthCounts[depth] >= self.maxBredth:
+                    return 0, None, None, "Dummy Return"
+                self.bredthCounts[depth] += 1
+
             bestMoves, bestSquare, bestPiece, bestScore = None, None, None, -math.inf
             moves = None
             
@@ -255,6 +273,9 @@ class QuartoMiniMaxSolver:
                     bestPiece  = piece
                     bestMoves  = moves
                     bestSquare = square
+
+                if bestScore > 0:
+                    break
 
 
             self.profiler.log("Storing Hash")
