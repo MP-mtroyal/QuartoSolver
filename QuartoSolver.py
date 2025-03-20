@@ -9,7 +9,7 @@ import time
 if __name__ == "__main__":
     gamesToTest = 1
     currGame = 1
-    piecesToStart = 4
+    piecesToStart = 2
     durations = []
 
     #===== Simple AI playing against itself. 
