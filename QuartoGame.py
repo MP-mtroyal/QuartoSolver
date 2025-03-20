@@ -16,7 +16,7 @@ class QuartoGame:
         self.dims            = IntVector2(4, 4) #hardcoded to 4x4 for now
         #self.selectedPieces  = np.array([], dtype=np.int32)
         self.selectedPieces = []
-        self.board           = - np.ones(self.dims, dtype=np.int32)
+        self.board           = - np.ones(self.dims, dtype=np.int16, order='C')
         #self.remainingPieces = [1 for i in range(self.dims[0] * self.dims[1])]
         self.remainingPieces = np.ones([self.dims[0] * self.dims[1]],dtype=np.uint8)
 

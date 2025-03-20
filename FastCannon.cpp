@@ -7,22 +7,22 @@
 namespace py = pybind11;
 
 // ----------- Fast Cannonization Functions ----------
-void boxRotate4x4(int* board);
-void innerRotate4x4(int* board);
-void rotate(int* board);
-void verticalAxisFlip(int* board);
-void horizontalAxisFlip(int* board);
-void tranpose4x4(int* board);
-void copyBoard(int* src, int* dst, int size);
-int getCandidateType(int* board);
-int getXOR(int* board);
-void boardXOR(int* board, int xorPiece, int boardSize);
-int64_t evaluateBoard(int* board, int boardSize);
+void boxRotate4x4(short* board);
+void innerRotate4x4(short* board);
+void rotate(short* board);
+void verticalAxisFlip(short* board);
+void horizontalAxisFlip(short* board);
+void tranpose4x4(short* board);
+void copyBoard(short* src, short* dst, int size);
+int getCandidateType(short* board);
+int getXOR(short* board);
+void boardXOR(short* board, int xorPiece, int boardSize);
+int64_t evaluateBoard(short* board, int boardSize);
 
 //--------------- Fast Board Functions ------------
 bool checkFeatList(int* pieces, int numPieces);
-bool PlacePiece(py::array_t<int> board, int x, int y, int piece);
-int cannonizeBoardTransforms(int* brdPtr, int boardSize);
+bool PlacePiece(py::array_t<short> board, int x, int y, int piece);
+int cannonizeBoardTransforms(short* brdPtr, int boardSize);
 
 /*
 Indices for contigious array
@@ -33,7 +33,7 @@ Indices for contigious array
 */
 
 
-void transformBoard(int* board, int transformIndex){
+void transformBoard(short* board, int transformIndex){
     int baseStructIndex = transformIndex & 3;
     int d4index = transformIndex >> 2;
     //====== Base Struct Transformations ============
@@ -81,7 +81,7 @@ void transformBoard(int* board, int transformIndex){
     }
 }
 
-void boxRotate4x4(int* board){
+void boxRotate4x4(short* board){
     int temp;
     int swaps1[] = {0, 1, 2, 3, 8, 9, 10, 11};
     int swaps2[] = {5, 4, 7, 6, 13, 12, 15, 14};
@@ -92,7 +92,7 @@ void boxRotate4x4(int* board){
     }
 }
 
-void innerRotate4x4(int* board){
+void innerRotate4x4(short* board){
     int temp;
     int swaps1[] = {1, 4, 7, 13, 5, 9};
     int swaps2[] = {2, 8, 11, 14, 10, 6};
@@ -104,7 +104,7 @@ void innerRotate4x4(int* board){
 }
 
 //CCW rotation by 90 degrees
-void rotate(int* board){
+void rotate(short* board){
     int temp;
     int chainLength = 4;
     int chainCount  = 4;
@@ -124,7 +124,7 @@ void rotate(int* board){
     }
 }
 
-void verticalAxisFlip(int* board){
+void verticalAxisFlip(short* board){
     int temp;
     int swaps1[] = {0, 1, 2, 3, 4, 5, 6, 7};
     int swaps2[] = {12, 13, 14, 15, 8, 9, 10, 11};
@@ -135,7 +135,7 @@ void verticalAxisFlip(int* board){
     }
 }
 
-void horizontalAxisFlip(int* board){
+void horizontalAxisFlip(short* board){
     int temp;
     int swaps1[] = {0, 1, 4, 5, 8, 9, 12, 13};
     int swaps2[] = {3, 2, 7, 6, 11, 10, 15, 14};
@@ -146,7 +146,7 @@ void horizontalAxisFlip(int* board){
     }
 }
 
-void tranpose4x4(int* board){
+void tranpose4x4(short* board){
     int temp;
     int swaps1[] = {1, 2, 3, 6, 7, 11};
     int swaps2[] = {4, 8, 12, 9, 13, 14};
@@ -157,25 +157,25 @@ void tranpose4x4(int* board){
     }
 }
 
-void copyBoard(int* src, int* dst, int size){
+void copyBoard(short* src, short* dst, int size){
     for (int i=0; i<size; i++){
         dst[i] = src[i];
     }
 }
 
-int getCandidateType(int* board){
+int getCandidateType(short* board){
     if (board[0] >= 0) {return 1;}
     if (board[1] >= 0) {return 2;}
     return -1;
 }
 
-int getXOR(int* board){
+int getXOR(short* board){
     if (board[0] >= 0) {return board[0];}
     if (board[1] >= 0) {return board[1];}
     return -1;
 }
 
-void boardXOR(int* board, int xorPiece, int boardSize){
+void boardXOR(short* board, int xorPiece, int boardSize){
     for (int i=0; i<boardSize; i++){
         if (board[i] >= 0){
             board[i] = board[i] ^ xorPiece;
@@ -183,7 +183,7 @@ void boardXOR(int* board, int xorPiece, int boardSize){
     }
 }
 
-int64_t evaluateBoard(int* board, int boardSize){
+int64_t evaluateBoard(short* board, int boardSize){
     int64_t boardHash = 0;
     for(int i=1; i<boardSize; i++){
         if (board[i] >= 0){
@@ -193,9 +193,9 @@ int64_t evaluateBoard(int* board, int boardSize){
     return boardHash;
 }
 
-int cannonizeBoardTransforms(int *brdPtr, int boardSize){
-    int* bestBoard = (int*)malloc(boardSize * sizeof(int));
-    int* buffBoard = (int*)malloc(boardSize * sizeof(int));
+int cannonizeBoardTransforms(short *brdPtr, int boardSize){
+    short* bestBoard = (short*)malloc(boardSize * sizeof(short));
+    short* buffBoard = (short*)malloc(boardSize * sizeof(short));
     
     int64_t bestHash = 0;
     int64_t currHash = 0;
@@ -261,7 +261,7 @@ int numOnesInBinStr(int binStr) {
 }
 
 bool featureBitSwap(
-    int* brdPtr, 
+    short* brdPtr, 
     int boardSize, 
     uint8_t* remPtr,
     int remSize,
@@ -337,14 +337,14 @@ bool featureBitSwap(
     return true;
 }
 
-void ApplyFeatureSwaps(py::array_t<int> board, py::array_t<uint8_t> remPieces, py::array_t<int> selPieces){
+void ApplyFeatureSwaps(py::array_t<short> board, py::array_t<uint8_t> remPieces, py::array_t<int> selPieces){
     // Get buffer info (allows access to raw data)
     py::buffer_info buf = board.request();
     // Ensure it's mutable
     if (buf.readonly) {
         throw std::runtime_error("Input array is not writable!");
     }
-    int* brdPtr = static_cast<int*>(buf.ptr);
+    short* brdPtr = static_cast<short*>(buf.ptr);
     int boardSize = static_cast<int>(buf.size);
     
     // Get rem pieces buffer
@@ -415,14 +415,14 @@ void xorPieces(int* selectPtr, int selectSize, uint8_t* remPtr, int remSize, int
     }
 }
 
-int cannonize(py::array_t<int> board) {
+int cannonize(py::array_t<short> board) {
     // Get buffer info (allows access to raw data)
     py::buffer_info buf = board.request();
     // Ensure it's mutable
     if (buf.readonly) {
         throw std::runtime_error("Input array is not writable!");
     }
-    int* brdPtr = static_cast<int*>(buf.ptr);
+    short* brdPtr = static_cast<short*>(buf.ptr);
     int boardSize = static_cast<int>(buf.size);
 
     int boardXOR = cannonizeBoardTransforms(brdPtr, boardSize);
@@ -442,10 +442,10 @@ bool checkFeatList(int* pieces, int numPieces){
 }
 
 
-bool PlacePiece(py::array_t<int> board, int x, int y, int piece){
+bool PlacePiece(py::array_t<short> board, int x, int y, int piece){
     int featList[4] = {0,0,0,0};
     py::buffer_info buf = board.request();
-    int* ptr = static_cast<int*>(buf.ptr);
+    short* ptr = static_cast<short*>(buf.ptr);
 
     ptr[x*4 + y] = piece;
 
