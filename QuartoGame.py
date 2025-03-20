@@ -273,51 +273,78 @@ class QuartoGame:
     # Considers only what spaces are occupied, and what they are occupied by
     # Does not consider selected pieces or remaining pieces
     # The resulting number can be up to the order of 2^80
-    # def hashBoard(self):
-    #     digits = int(math.log2(len(self.remainingPieces)))
-    #     occupied = 0
-    #     values = 0
-    #     for y in range(self.dims.y):
-    #         for x in range(self.dims.x):
-    #             if self.board[x, y] >= 0:
-    #                 values = (values << digits) + int(self.board[x,y])
-    #                 occupied += 1
-    #             occupied = occupied << 1
-    #     occupied = occupied >> 1
-    #     return (values << len(self.remainingPieces)) + occupied
-    # -String interpretation, for bit overflow safety
     def hashBoard(self):
         digits = 4
-        occupied = ""
-        values = ""
+        occupied = 0
+        values = 0
         for y in range(self.dims.y):
             for x in range(self.dims.x):
                 if self.board[x, y] >= 0:
-                    s = bin(int(self.board[x,y]))[2:]
-                    while len(s) < digits: s = '0' + s
-                    values += s
-                    occupied += '1'
-                else:
-                    occupied += '0'
-        return values + occupied
+                    values = (values << digits) | int(self.board[x,y])
+                    occupied += 1
+                occupied = occupied << 1
+        occupied = occupied >> 1
+        return (values << len(self.remainingPieces)) | occupied
     
+    # -String interpretation, for bit overflow safety
+    # def hashBoard(self):
+    #     digits = 4
+    #     occupied = ""
+    #     values = ""
+    #     for y in range(self.dims.y):
+    #         for x in range(self.dims.x):
+    #             if self.board[x, y] >= 0:
+    #                 s = bin(int(self.board[x,y]))[2:]
+    #                 while len(s) < digits: s = '0' + s
+    #                 values += s
+    #                 occupied += '1'
+    #             else:
+    #                 occupied += '0'
+    #     return values + occupied
 
+    # Old string implementation of loadFromHash
     #hard coded to board size of 4x4 for now
-    def loadFromHash(self, hash):
-        occupied = hash[-16:]
-        print(occupied)
-        pieceValues = hash[:-16]
-        print(pieceValues)
-        pieces = [int(hash[i:i+4], 2) for i in range(0, len(pieceValues), 4)]
-        print(pieces)
-        for i in range(len(self.remainingPieces)):
-            self.remainingPieces[i] = 0 if i in pieces else 1
-        for y in range(self.dims.y):
-            for x in range(self.dims.x):
-                if occupied[y*4 + x] == '1':
-                    self.board[IntVector2(x,y)] = pieces.pop(0)
-                else:
-                    self.board[IntVector2(x,y)] = -1
+    # def loadFromHash(self, hash):
+    #     occupied = hash[-16:]
+    #     print(occupied)
+    #     pieceValues = hash[:-16]
+    #     print(pieceValues)
+    #     pieces = [int(hash[i:i+4], 2) for i in range(0, len(pieceValues), 4)]
+    #     print(pieces)
+    #     for i in range(len(self.remainingPieces)):
+    #         self.remainingPieces[i] = 0 if i in pieces else 1
+    #     for y in range(self.dims.y):
+    #         for x in range(self.dims.x):
+    #             if occupied[y*4 + x] == '1':
+    #                 self.board[IntVector2(x,y)] = pieces.pop(0)
+    #             else:
+    #                 self.board[IntVector2(x,y)] = -1
+    #     self.isWinningState = self.checkWinFull()
+
+    # loadHash that uses 80bit hash to restore game state
+    def loadFromHash(self, boardHash):
+        values = boardHash >> 16  # Extract the first 64 bits (piece values)
+        occupied = boardHash & 0xFFFF  # Extract the last 16 bits (occupied squares)
+
+        self.board.fill(-1)
+        self.remainingPieces.fill(1)
+
+        # Extract 16 pieces from LSB
+        piece_list = []
+        for _ in range(16):  
+            piece_list.append(values & 0b1111)
+            values >>= 4
+
+        # Reconstruct the board
+        piece_index = 0
+        for y in range(self.dims.y - 1, -1, -1):
+            for x in range(self.dims.x - 1, -1, -1):
+                bit_position = (y * self.dims.x) + x
+                if (occupied >> (15 - bit_position)) & 1:
+                    self.board[IntVector2(x, y)] = piece_list[piece_index]
+                    self.remainingPieces[piece_list[piece_index]] = 0
+                    piece_index += 1
+
         self.isWinningState = self.checkWinFull()
 
     """
@@ -380,3 +407,11 @@ class QuartoGame:
                 newRemPieces[index] = 1
         self.remainingPieces = newRemPieces
 
+# Test to see if hash is working as expected
+# g = QuartoGame(twistCount=1)
+# g.populateBoard(8)
+# g.printRemainingPieces()
+# hash = g.hashBoard()
+# print(f'Hash: {hash:04b}')
+# g.loadFromHash(hash)
+# g.printGame()

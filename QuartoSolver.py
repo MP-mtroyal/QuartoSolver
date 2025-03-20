@@ -9,7 +9,7 @@ import time
 if __name__ == "__main__":
     gamesToTest = 1
     currGame = 1
-    piecesToStart = 0
+    piecesToStart = 4
     durations = []
 
     #===== Simple AI playing against itself. 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         startTime = time.time()
         g = QuartoGame(twistCount=twistCount)
         g.populateBoard(piecesToStart)
-        ai = QuartoMiniMaxSolver(depth=10)
+        ai = QuartoMiniMaxSolver(depth=32)
         #ai = QuartoIterativeMiniMax(depth=32, maxBredth=5000)
 
         #ai.populateCannontableParallel(g, 6)
