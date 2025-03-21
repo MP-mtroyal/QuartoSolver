@@ -441,7 +441,6 @@ bool checkFeatList(int* pieces, int numPieces){
     return andCmp != 0 || 15 - orCmp != 0;
 }
 
-
 bool PlacePiece(py::array_t<short> board, int x, int y, int piece){
     int featList[4] = {0,0,0,0};
     py::buffer_info buf = board.request();

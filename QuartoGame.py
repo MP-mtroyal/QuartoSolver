@@ -329,6 +329,9 @@ class QuartoGame:
         self.board.fill(-1)
         self.remainingPieces.fill(1)
 
+        self.remainingPieceCount = 16
+        self.avaliableSquareCount = 16
+
         # Extract 16 pieces from LSB
         piece_list = []
         for _ in range(16):  
@@ -344,6 +347,8 @@ class QuartoGame:
                     self.board[IntVector2(x, y)] = piece_list[piece_index]
                     self.remainingPieces[piece_list[piece_index]] = 0
                     piece_index += 1
+                    self.avaliableSquareCount -= 1
+                    self.remainingPieceCount -= 1
 
         self.isWinningState = self.checkWinFull()
 

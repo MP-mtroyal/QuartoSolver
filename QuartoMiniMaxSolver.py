@@ -4,7 +4,7 @@ from GreatQuartoCannon import GreatQuartoCannon
 from QuartoCannon import QuartoCannon
 import math
 from Profiler import Profiler
-
+from QuartoDataTypes import IntVector2
 import time
 
 """
@@ -118,7 +118,7 @@ class QuartoMiniMaxSolver:
             gameState = self.eval(game, turn)
             
             self.profiler.log("Return")
-            return gameState, None, None, " Score:" + str(gameState)
+            return gameState, 0, IntVector2(-1, -1), " Score:" + str(gameState)
 
         # self.profiler.log("Hashing")
         # basicGameHash = game.hashBoard()
