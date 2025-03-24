@@ -7,13 +7,13 @@ import multiprocessing
 from BatchMinimax import BatchMinimaxSolver
 
 # Parallel Worker
-def solveGame(index, dataLoader, solver):
-    game = dataLoader.getGame(index)
-    game.printGame()
-    score, piece, place, moves = solver.miniMax(game, 32, True, False)
-    print(f'Solved Game {index}')
+# def solveGame(index, dataLoader, solver):
+#     game = dataLoader.getGame(index)
+#     game.printGame()
+#     score, piece, place, moves = solver.miniMax(game, 32, True, False)
+#     print(f'Solved Game {index}')
 
-    return moves
+#     return moves
 
 def solveGameBatch(indices, dataLoader):
     solver = BatchMinimaxSolver()
@@ -23,17 +23,15 @@ def solveGameBatch(indices, dataLoader):
 
 # Worker dispatcher
 if __name__ == '__main__':
-    numWorkers = 5
-    solutionName = "testDepth7Sol.txt"
-    depthTableName = "testDepth7.txt"
-    numToSolve = 50
-    numPerBatch = 5
+    numWorkers = 22
+    solutionName = "depth6Sol.txt"
+    depthTableName = "depth6filtered.txt"
+    depthTableLocation = "S:/QuartoStates/"
+    numToSolve = 100_000
+    numPerBatch = 100
 
     dataLoader = DepthSaver()
-    dataLoader.loadGames(depthTableName)
-
-    solver = QuartoMiniMaxSolver(depth=32)
-
+    dataLoader.loadGames(fileName=depthTableName, path=depthTableLocation)
 
     startTime = time.time()
     bestTime, worstTime = math.inf, 0
@@ -52,9 +50,8 @@ if __name__ == '__main__':
 
         games = [dataLoader.getGame(i) for i in range(10)]
 
-        #batchSolver.solveBatch(games)
+        print(f"=========== Creating indices starting at {startIndex} ==========================")
 
-        #with multiprocessing.Pool(processes=numToDispatch) as pool:
         indices = []
         index = startIndex
         for i in range(numWorkers):
@@ -69,7 +66,6 @@ if __name__ == '__main__':
                 break
         
         with multiprocessing.Pool(processes=len(indices)) as pool:
-            print(indices)
             results = pool.starmap(solveGameBatch, [(indices[i], dataLoader) for i in range(len(indices))])
             for i in range(len(results)):
                 for n in range(len(results[i])):
