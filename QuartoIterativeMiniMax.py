@@ -229,13 +229,8 @@ class QuartoIterativeMiniMax:
             turn: bool,
             placingPiece: bool
     ):
-        
-        # self.profiler.log("Naive Cannon")
-        # game = self.naiveCannon.cannonizeGame(game)
-
         self.profiler.log("Hashing")
         gameHash = game.hashBoard()
-
 
         #Game has been canonized already
         self.profiler.log("Checking Memo")

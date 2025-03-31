@@ -128,8 +128,8 @@ class QuartoGame:
             return False
 
         self.logGameState()
-        #self.board[index] = piece
-        self.isWinningState = FastCannon.placePiece(self.board, index.x, index.y, piece)
+        self.board[index] = piece
+        #self.isWinningState = FastCannon.placePiece(self.board, index.x, index.y, piece)
         #pieceIndex = np.where(self.selectedPieces == piece)[0][0]
         #self.selectedPieces = np.delete(self.selectedPieces, pieceIndex)
         self.selectedPieces.pop(self.selectedPieces.index(piece))
@@ -400,23 +400,15 @@ class QuartoGame:
 
     # Performs XOR operation using the given XORpiece on the selected and remaining pieces
     def xorPieces(self, xorPiece):
-        if xorPiece < 0 or xorPiece >= len(self.remainingPieces):
+        if xorPiece <= 0 or xorPiece >= len(self.remainingPieces):
             return
         for i in range(len(self.selectedPieces)):
             self.selectedPieces[i] = self.selectedPieces[i] ^ xorPiece
 
-        newRemPieces = [0] * len(self.remainingPieces)
+        newRemPieces = np.zeros([len(self.remainingPieces)])
         for i in range(len(self.remainingPieces)):
             if self.remainingPieces[i] > 0:
                 index = i ^ xorPiece
                 newRemPieces[index] = 1
         self.remainingPieces = newRemPieces
 
-# Test to see if hash is working as expected
-# g = QuartoGame(twistCount=1)
-# g.populateBoard(8)
-# g.printRemainingPieces()
-# hash = g.hashBoard()
-# print(f'Hash: {hash:04b}')
-# g.loadFromHash(hash)
-# g.printGame()

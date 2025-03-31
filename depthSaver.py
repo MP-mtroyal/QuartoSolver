@@ -1,6 +1,20 @@
 from QuartoGame import QuartoGame
 from GreatQuartoCannon import GreatQuartoCannon
 import time
+from QuartoDataTypes import IntVector2
+
+def hasDup(game: QuartoGame):
+    counts = [0] * 16
+    for y in range(game.board.shape[0]):
+        for x in range(game.board.shape[1]):
+            val = game.board[IntVector2(x,y)]
+            if val >= 0:
+                counts[int(val)] += 1
+                if counts[int(val)] > 1:
+                    #game.printGame()
+                    return True
+    return False
+
 
 class DepthSaver:
     def __init__(self, bredthLimit=None):
@@ -15,6 +29,14 @@ class DepthSaver:
         self.bredthLimit = bredthLimit
         self.bredthCounter = []
 
+        # ================ single look stuff ===================
+        self.boardToView = 3
+        self.depthToView = 3
+        self.doneViewing = False
+        self.shouldView = False
+
+        self.viewPieceMemo = set() # memoizes where pieces have already been printed
+        # ======================================================
 
     # Explore and save to memory the boards at a given number of pieces placed
     def exploreDepth(self, depth):
@@ -35,10 +57,35 @@ class DepthSaver:
         if self.bredthLimit is not None:
             if self.bredthCounter[depth] >= self.bredthLimit:
                 return
-            self.bredthCounter[depth] += 1
+            if not placingPiece:
+                self.bredthCounter[depth] += 1
+
+        if len(self.memo) % 10_000 == 0:
+            print(f'Found a total of {len(self.memo)}', end='\r')
+
+        # ================ Single View Stuff =====================
+        # if self.bredthCounter[self.depthToView] == self.boardToView:
+        #     self.shouldView = True
+        # elif self.bredthCounter[self.depthToView] > self.boardToView:
+        #     self.doneViewing = True
+        
+        # if self.doneViewing:
+        #     return
+        # if self.shouldView and not placingPiece:
+        #     remPieceStr = str(game.getRemainingPieces())
+        #     if remPieceStr not in self.viewPieceMemo:
+        #         print("\n\n")
+        #         game.printGame()
+        #         print(remPieceStr)
+        #         self.viewPieceMemo.add(remPieceStr)
+        #         if (hasDup(game)):
+        #             print("Has Duplicate")
+        #=========================================================
+        
         if placingPiece:
             gameHash = game.hashBoard()
             piece = game.getSelectedPieces()[0]
+
             if (gameHash, piece) in self.memo:
                 return
             self.memo.add((gameHash, piece))
@@ -48,13 +95,21 @@ class DepthSaver:
                 game.removePiece(place)
         else:
             game = self.cannon.cannonizeGame(game)
+
+            # if self.shouldView and not placingPiece and depth == self.depthToView:
+            #     print("\nCannonized Version")
+            #     game.printGame()
+            #     remPieceStr = str(game.getRemainingPieces())
+            #     print(remPieceStr)
+
             gameHash = game.hashBoard()
             if (gameHash, None) in self.memo:
                 return
 
             self.memo.add((gameHash, None))
             if depth == self.depthToExplore:
-                self.exploredAtDepth.add(gameHash)
+                if not game.checkWinFull():
+                    self.exploredAtDepth.add(gameHash)
                 return
             if depth >= 4 and game.checkWinFull():
                 return
@@ -124,9 +179,10 @@ class DepthSaver:
         self.solutions[index] = sol
 
 
-# saver = DepthSaver(bredthLimit=500)
+print("Finding depth 6")
+saver = DepthSaver()
 
-# saver.exploreDepth(7)
+saver.exploreDepth(6)
 
-# saver.saveDepth("testDepth7.txt")
+saver.saveDepth("depth6full.txt")
 

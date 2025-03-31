@@ -160,10 +160,11 @@ class GreatQuartoCannon(QuartoCannon):
     # and XOR normalization, then returns the best board based on evaluation.
     def cannonizeGame(self, game):
         game = game.copy()
-
+        
         xorPiece = FastCannon.cannonize(game.board)
         game.xorPieces(xorPiece)
-
+        
+        
         swapped1Success = self.swapBitsToPos(game, 0, 1)
         if swapped1Success:
             swapped2Success = self.swapBitsToPos(game, 1, 1)
@@ -187,14 +188,45 @@ class GreatQuartoCannon(QuartoCannon):
         return game
 
         #Python Cannoize logic, kept commented for testing and reference
-        # gameBoard = game.board.astype(np.int32)
+        # gameBoard = game.board #game.board.astype(np.int32)
         # transformations = self.d4Tranformation(self.getBaseStruct(gameBoard))
         # cBoard = self.getCanditateBoards(transformations)
         # toBeEval = []
+        # boardXors = []
+
         # for board in cBoard:
+        #     boardXors.append(self.getXOR(board))
         #     toBeEval.append(self.boardXOR(board, self.getXOR(board)))
         # game.board = self.best_board(toBeEval)
-        # game.xorPieces(self.getXOR(game.board))
+        # xorInt = None
+
+
+        # for i in range(len(toBeEval)):
+        #     if toBeEval[i] is game.board: # Compare reference rather than elements
+        #         xorInt = boardXors[i]
+        #         break
+        # game.xorPieces(xorInt)
+
+        # swapped1Success = self.swapBitsToPos(game, 0, 1)
+        # if swapped1Success:
+        #     swapped2Success = self.swapBitsToPos(game, 1, 1)
+        #     if swapped2Success:
+        #         swapped3Success = self.swapBitsToPos(game, 2, 1)
+        #     else:
+        #         swapped3Success = self.swapBitsToPos(game, 1, 2)
+        #         if swapped3Success:
+        #             self.swapBitsToPos(game, 2, 1)
+        # else:
+        #     swapped2Success = self.swapBitsToPos(game, 0, 2)
+        #     if swapped2Success:
+        #         self.swapBitsToPos(game, 1, 2)
+        #         swapped3Success = self.swapBitsToPos(game, 2, 1)
+        #     else:
+        #         swapped3Success = self.swapBitsToPos(game, 0, 3)
+        #         if swapped3Success:
+        #             self.swapBitsToPos(game, 1, 2)
+        #             self.swapBitsToPos(game, 2, 1)
+
         # return game
 
     
@@ -209,7 +241,7 @@ class GreatQuartoCannon(QuartoCannon):
             if piece & mask != mask and piece & mask != 0:
                 game.selectedPieces[i] = piece ^ mask
 
-        newRem = [0] * len(game.remainingPieces)
+        newRem = np.zeros([len(game.remainingPieces)])
         for i in range(len(newRem)):
             if game.remainingPieces[i] == 1:
                 if i & mask != mask and i & mask != 0:
@@ -217,6 +249,7 @@ class GreatQuartoCannon(QuartoCannon):
                 else:
                     newRem[i] = 1
         game.remainingPieces = newRem
+        
 
     # Finds the first piece on the board that meets the criteria 
     #   -has exactly thresh number of bits as 1s at and after bitPos

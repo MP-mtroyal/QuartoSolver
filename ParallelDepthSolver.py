@@ -24,10 +24,11 @@ def solveGameBatch(indices, dataLoader):
 # Worker dispatcher
 if __name__ == '__main__':
     numWorkers = 22
-    solutionName = "depth6Sol.txt"
-    depthTableName = "depth6filtered.txt"
+    #solutionName = "depth6Sol.txt"
+    solutionName = "smallDepth6.txt"
+    depthTableName = "depth6mini.txt"
     depthTableLocation = "S:/QuartoStates/"
-    numToSolve = 100_000
+    numToSolve = 100
     numPerBatch = 100
 
     dataLoader = DepthSaver()

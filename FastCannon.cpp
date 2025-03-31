@@ -193,6 +193,18 @@ int64_t evaluateBoard(short* board, int boardSize){
     return boardHash;
 }
 
+void printBoard(short *brdPtr, int boardSize){
+    char outStr[2] = {'A', '\0'};
+    for (int i=0; i<boardSize; i++){
+        if (brdPtr[i] >= 0){
+            outStr[0] = brdPtr[i] + '0';
+            printf(outStr);
+            printf(", ");
+        }
+    }
+    printf("\n");
+}
+
 int cannonizeBoardTransforms(short *brdPtr, int boardSize){
     short* bestBoard = (short*)malloc(boardSize * sizeof(short));
     short* buffBoard = (short*)malloc(boardSize * sizeof(short));
@@ -213,7 +225,7 @@ int cannonizeBoardTransforms(short *brdPtr, int boardSize){
         currXor = getXOR(buffBoard);
         // Don't consider the board if no valid XOR piece exists
         if(currXor < 0){continue;}
-        
+
         currCandidateType = getCandidateType(buffBoard);
         // Candidate type not yet selected
         if (bestCandidateType < 0){ bestCandidateType = currCandidateType;} 
@@ -242,10 +254,11 @@ int cannonizeBoardTransforms(short *brdPtr, int boardSize){
         //Copy over best board
         copyBoard(bestBoard, brdPtr, boardSize);
     }
+
     free(bestBoard);
     free(buffBoard);
 
-    return currXor;
+    return bestXor;
 }
 
 int numOnesInBinStr(int binStr) {
