@@ -1,15 +1,18 @@
 
 from QuartoGame import QuartoGame
+from Affine4Game import Affine4Game
 from QuartoAI import QuartoAI
 from QuartoMiniMaxSolver import QuartoMiniMaxSolver
 from QuartoIterativeMiniMax import QuartoIterativeMiniMax
+
+from Affine4Cannon import Affine4Cannon
 
 import time
 
 if __name__ == "__main__":
     gamesToTest = 1
     currGame = 1
-    piecesToStart = 5
+    piecesToStart = 6
     durations = []
 
     #===== Simple AI playing against itself. 
@@ -20,9 +23,13 @@ if __name__ == "__main__":
     while not quit:
         print(f'----------------  Game:{currGame} --------------------')
         startTime = time.time()
-        g = QuartoGame(twistCount=twistCount)
+        #g = QuartoGame(twistCount=twistCount)
+        g = Affine4Game(twistCount=twistCount, verbose=False, undoMemLength=2)
+        cannon = Affine4Cannon()
+
         g.populateBoard(piecesToStart)
-        ai = QuartoMiniMaxSolver(depth=32)
+        
+        ai = QuartoMiniMaxSolver(depth=32, cannonizer=cannon)
         #ai = QuartoIterativeMiniMax(depth=32, maxBredth=5000)
 
         #ai.populateCannontableParallel(g, 6)

@@ -21,13 +21,16 @@ class QuartoMiniMaxSolver:
     Parameters:
         depth (int): Maximum search depth minimax will go to. (32 for full game)
     """
-    def __init__(self, depth=16, maxBredth=None):
+    def __init__(self, depth=16, maxBredth=None, cannonizer=None):
         self.memoTable = {}
         self.cannonTable = {}
         self.depth = depth
         #self.cannonizer = QuartoCannon()
         #self.cannonizer = BasicQuartoCannon()
-        self.cannonizer = GreatQuartoCannon()
+        if cannonizer is None:
+            self.cannonizer = GreatQuartoCannon()
+        else:
+            self.cannonizer = cannonizer
         self.profiler   = Profiler()
         self.exploredCounter = 0
         self.memoedCounter = 0
