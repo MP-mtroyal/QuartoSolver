@@ -1,5 +1,7 @@
 from QuartoGame import QuartoGame
+from Affine4Game import Affine4Game
 from GreatQuartoCannon import GreatQuartoCannon
+from Affine4Cannon import Affine4Cannon
 import time
 from QuartoDataTypes import IntVector2
 
@@ -17,11 +19,11 @@ def hasDup(game: QuartoGame):
 
 
 class DepthSaver:
-    def __init__(self, bredthLimit=None):
+    def __init__(self, cannon, bredthLimit=None):
         self.memo = set()
         self.exploredAtDepth = set()
         self.depthToExplore = 0
-        self.cannon = GreatQuartoCannon()
+        self.cannon = cannon
 
         self.hashes = []
         self.solutions = []
@@ -39,15 +41,15 @@ class DepthSaver:
         # ======================================================
 
     # Explore and save to memory the boards at a given number of pieces placed
-    def exploreDepth(self, depth):
+    def exploreDepth(self, depth, game=None):
         self.memo = set()
         self.exploredAtDepth = set()
         self.depthToExplore = depth
         if self.bredthLimit is not None:
             self.bredthCounter = [0] * (depth + 1)
 
-
-        game = QuartoGame(twistCount=1, verbose=False, undoMemLength=0)
+        if game is None:
+            game = QuartoGame(twistCount=1, verbose=False, undoMemLength=0)
         startTime = time.time()
         self._explore(game, 0, False)
         print(f'Found {len(self.exploredAtDepth)} boards with {depth} pieces on them in {(time.time() - startTime) :.03f}')
@@ -179,10 +181,13 @@ class DepthSaver:
         self.solutions[index] = sol
 
 
-print("Finding depth 6")
-saver = DepthSaver()
+saver = DepthSaver(Affine4Cannon())
 
-saver.exploreDepth(6)
+saver.exploreDepth(6, Affine4Game(undoMemLength=0))
 
-saver.saveDepth("depth6full.txt")
 
+# game = Affine4Game()
+# for key in saver.exploredAtDepth:
+#     game.loadFromHash(key)
+#     game.printGame()
+#     print()
