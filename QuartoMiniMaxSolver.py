@@ -112,13 +112,12 @@ class QuartoMiniMaxSolver:
     ):
 
         self.profiler.log("Checking Depth")
-        if depth == 0 or game.checkWin() or game.avaliableSquareCount == 0 or game.remainingPieceCount <= 0:
-
-            self.profiler.log("Evaluating Board")
-            gameState = self.eval(game, turn)
-            
+        if game.checkWin():
             self.profiler.log("Return")
-            return gameState, 0, IntVector2(-1, -1), " Score:" + str(gameState)
+            return 1, 0, IntVector2(-1, -1), " Score:1"
+        if depth == 0 or game.avaliableSquareCount == 0 or game.remainingPieceCount <= 0:
+            self.profiler.log("Return")
+            return 0, 0, IntVector2(-1, -1), " Score:0"
 
         # self.profiler.log("Hashing")
         # basicGameHash = game.hashBoard()
@@ -191,9 +190,6 @@ class QuartoMiniMaxSolver:
                 game.removePiece(square)
 
                 self.profiler.log("Basic Math")
-                if not turn:
-                    score *= -1
-
                 if score > bestScore:
                     bestScore = score
                     bestSquare = square
@@ -263,10 +259,8 @@ class QuartoMiniMaxSolver:
                     self.profiler.log("Deselecting")
                     game.deselectAll()
 
-
                 self.profiler.log("Basic Math")
-                if turn:
-                    score *= -1
+                score *= -1
 
                 if score > bestScore:
                     bestScore  = score

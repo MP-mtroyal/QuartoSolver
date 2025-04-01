@@ -254,12 +254,13 @@ class QuartoIterativeMiniMax:
 
 
         self.profiler.log("Checking Depth")
-        if depth == 0 or game.checkWin() or game.avaliableSquareCount <= 0 or game.remainingPieceCount <= 0:
-            self.profiler.log("Evaluating Board")
-            gameState = self.eval(game, turn)
+        if game.checkWin():
+            self.profiler.log("Return")
+            return 1, None, None, "Score:1"
+        if depth == 0 or game.avaliableSquareCount <= 0 or game.remainingPieceCount <= 0:
 
             self.profiler.log("Return")
-            return gameState, None, None, " Score:" + str(gameState)
+            return 0, None, None, " Score:0"
 
         
 
@@ -315,9 +316,6 @@ class QuartoIterativeMiniMax:
                 score, _, _, moves = self.miniMax(nextGame, depth-1, turn, False)
 
                 self.profiler.log("Basic Math")
-                if not turn:
-                    score *= -1
-
                 if score > bestScore:
                     bestScore = score
                     bestSquare = square
@@ -386,8 +384,7 @@ class QuartoIterativeMiniMax:
                     game.deselectAll()
 
                 self.profiler.log("Basic Math")
-                if turn:
-                    score *= -1
+                score *= -1
 
                 if score > bestScore:
                     bestScore  = score

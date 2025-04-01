@@ -64,12 +64,10 @@ class BatchMinimaxSolver:
 
         # Base Case
         isFinal = game.checkWinFull()
-        if isFinal or game.avaliableSquareCount == 0 or game.remainingPieceCount == 0:
-            gameState = 0
-            if isFinal:
-                gameState = 1 if turn else -1
-            return gameState, self.getGameStateChar(gameState)
-            #return gameState, [gameState]
+        if isFinal:
+            return 1, self.getGameStateChar(1)
+        if game.avaliableSquareCount == 0 or game.remainingPieceCount == 0:
+            return 0, self.getGameStateChar(0)
 
         bestScore, bestPiece, bestSquare, bestSol = -math.inf, None, None, None
         gameHash = game.hashBoard()
@@ -91,9 +89,6 @@ class BatchMinimaxSolver:
                 score, sol = self.minimax(game, depth+1, turn, False)
 
                 game.removePiece(square)
-
-                if not turn:
-                    score *= -1
 
                 if score > bestScore:
                     bestScore = score
@@ -133,8 +128,7 @@ class BatchMinimaxSolver:
 
                     game.deselectAll()
 
-                if turn:
-                    score *= -1
+                score *= -1
                 
                 if score > bestScore:
                     bestScore = score
