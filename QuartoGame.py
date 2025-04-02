@@ -85,7 +85,7 @@ class QuartoGame:
             return False
         if self.twistCount <= len(self.selectedPieces):
             if self.verbose:
-                print(f'Cannot select another piece, there are {sum(self.remainingPieces)} already selected.')
+                print(f'Cannot select another piece, there are {len(self.selectedPieces)} already selected.')
             return False
 
         self.logGameState()
@@ -157,6 +157,8 @@ class QuartoGame:
         self.selectedPieceCount += 1
         self.board[index] = -1
         self.avaliableSquareCount += 1
+
+        return True
     
     def updateWinStatus(self, index):
         if self.isWinningState: return

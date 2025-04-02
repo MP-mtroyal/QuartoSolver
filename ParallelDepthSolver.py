@@ -47,9 +47,9 @@ if __name__ == '__main__':
         
         # ================= batch testing!! ==================
 
-        batchSolver = BatchMinimaxSolver()
+        #batchSolver = BatchMinimaxSolver()
 
-        games = [dataLoader.getGame(i) for i in range(10)]
+        #games = [dataLoader.getGame(i) for i in range(10)]
 
         print(f"=========== Creating indices starting at {startIndex} ==========================")
 

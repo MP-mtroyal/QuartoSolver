@@ -63,31 +63,13 @@ class DepthSaver:
                 self.bredthCounter[depth] += 1
 
         if len(self.memo) % 10_000 == 0:
-            print(f'Found a total of {len(self.memo)}', end='\r')
+            print(f'Found a total of {len(self.exploredAtDepth)}', end='\r')
 
-        # ================ Single View Stuff =====================
-        # if self.bredthCounter[self.depthToView] == self.boardToView:
-        #     self.shouldView = True
-        # elif self.bredthCounter[self.depthToView] > self.boardToView:
-        #     self.doneViewing = True
-        
-        # if self.doneViewing:
-        #     return
-        # if self.shouldView and not placingPiece:
-        #     remPieceStr = str(game.getRemainingPieces())
-        #     if remPieceStr not in self.viewPieceMemo:
-        #         print("\n\n")
-        #         game.printGame()
-        #         print(remPieceStr)
-        #         self.viewPieceMemo.add(remPieceStr)
-        #         if (hasDup(game)):
-        #             print("Has Duplicate")
-        #=========================================================
-        
+
         if placingPiece:
             gameHash = game.hashBoard()
             piece = game.getSelectedPieces()[0]
-
+            
             if (gameHash, piece) in self.memo:
                 return
             self.memo.add((gameHash, piece))
@@ -97,12 +79,6 @@ class DepthSaver:
                 game.removePiece(place)
         else:
             game = self.cannon.cannonizeGame(game)
-
-            # if self.shouldView and not placingPiece and depth == self.depthToView:
-            #     print("\nCannonized Version")
-            #     game.printGame()
-            #     remPieceStr = str(game.getRemainingPieces())
-            #     print(remPieceStr)
 
             gameHash = game.hashBoard()
             if (gameHash, None) in self.memo:
@@ -116,6 +92,10 @@ class DepthSaver:
             if depth >= 4 and game.checkWinFull():
                 return
 
+            # print(f"//////////////////////// Placeing {game.getRemainingPieces()} ///////////////////////////")
+            # print(game.placedPieces)
+            # game.printGame()
+            # print("//////////////////////////////////////////////////////////////////////////////")
             for piece in game.getRemainingPieces():
                 game.selectPiece(piece)
                 self._explore(game, depth, True)
@@ -163,15 +143,18 @@ class DepthSaver:
             for i in range(len(self.hashes)):
                 f.write(str(self.hashes[i]))
                 f.write(',')
-                if self.solutions[i] is None:
+                if len(self.solutions) <= i or self.solutions[i] is None:
                     f.write('-')
                 else:
                     f.write(self.solutions[i])
                 f.write('\n')
 
     # Returns the game at a given index
-    def getGame(self, index):
-        game = QuartoGame()
+    def getGame(self, index, isAffine=False):
+        if isAffine:
+            game = Affine4Game()
+        else:
+            game = QuartoGame()
         game.loadFromHash(self.hashes[index])
         return game
     
@@ -181,13 +164,8 @@ class DepthSaver:
         self.solutions[index] = sol
 
 
-saver = DepthSaver(Affine4Cannon())
+# saver = DepthSaver(Affine4Cannon())
 
-saver.exploreDepth(6, Affine4Game(undoMemLength=0))
+# saver.exploreDepth(7, Affine4Game(undoMemLength=0))
 
-
-# game = Affine4Game()
-# for key in saver.exploredAtDepth:
-#     game.loadFromHash(key)
-#     game.printGame()
-#     print()
+# saver.saveDepth("Affine7BoardsSmall.txt")
