@@ -166,6 +166,6 @@ class DepthSaver:
 
 # saver = DepthSaver(Affine4Cannon())
 
-# saver.exploreDepth(7, Affine4Game(undoMemLength=0))
+# saver.exploreDepth(6, Affine4Game(undoMemLength=0))
 
-# saver.saveDepth("Affine7BoardsSmall.txt")
+# saver.saveDepth("Affine6BoardsSmall.txt")

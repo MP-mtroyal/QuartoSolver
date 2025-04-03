@@ -18,7 +18,8 @@ def worker(indices, dataloader:DepthSaver):
             for square in places:
                 game.placePiece(piece, square)
                 #cannonGame = cannon.cannonizeGame(game)
-                solutions.add(game.hashBoard())
+                if not game.checkWinFull():
+                    solutions.add(game.hashBoard())
                 game.removePiece(square)
             game.deselectAll()
     return list(solutions)
@@ -26,8 +27,8 @@ def worker(indices, dataloader:DepthSaver):
 
 if __name__ == "__main__":
     numWorkers = 22
-    srcTable   = "Affine7Chunk_1.txt"
-    dstTable   = "Affine8Chunk_1.txt"
+    srcTable   = "Affine7Chunk_2.txt"
+    dstTable   = "Affine8Chunk_2.txt"
     depthTableLocation = "S:/QuartoStates/"
 
     solutions = set()
