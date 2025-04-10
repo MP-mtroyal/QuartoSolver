@@ -102,6 +102,18 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
         best_solutions = {}  # Will store best solution for each depth-(d-1) board
 
+        # Load previously solved boards at depth d-1 using DepthSaver
+        prev_solved_file = os.path.join(folder, f"Agl_Level_{d-1}_solved.txt")
+        if os.path.exists(prev_solved_file):
+            saver = DepthSaver()
+            saver.loadGames(fileName=os.path.basename(prev_solved_file), path=os.path.dirname(prev_solved_file) + "/")
+            for h, s in zip(saver.hashes, saver.solutions):
+                if s is not None:
+                    prev_score = ord(s[2]) - 49
+                    if (h not in best_solutions) or prev_score < (ord(best_solutions[h][2]) - 49):
+                        best_solutions[h] = s
+
+
         log_match_breakdown(depth_solutions, parent_hashes)
 
         # Direct Matches (identical hash in both depths)
@@ -158,7 +170,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
             saver = DepthSaver()
             saver.hashes = unlinked_hashes
             saver.solutions = dummy_sols
-            saver.saveSolution(f"Agl_Level_{d}_orphans.txt", path=folder)
+            saver.saveSolution(f"Agl_Level_{d}_orphans.txt", path=folder + '/')
             print(f"  {len(unlinked_hashes)} child boards had no matching parent.")
 
         # Save Solutions at Each Depth
@@ -166,7 +178,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         #     saver = DepthSaver()
         #     saver.hashes = list(best_solutions.keys())
         #     saver.solutions = list(best_solutions.values())
-        #     saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder)
+        #     saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder + '/')
         #     print(f"  {len(best_solutions)} parent boards solved and saved.")
 
         # Save final output only at shallowest depth
@@ -175,9 +187,9 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
                 saver = DepthSaver()
                 saver.hashes = list(best_solutions.keys())
                 saver.solutions = list(best_solutions.values())
-                saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder)
+                saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder + '/')
                 print(f"Final depth {d-1} solved output written: {len(best_solutions)} boards.")
 
 
 # Run backpropagation from deepest_depth up to shallowest_depth, storing best solutions at each level
-backpropagate_all(folder="./Solved_Unsolved", deepest_depth=5, shallowest_depth=4)
+backpropagate_all(folder="./Solved_Unsolved", deepest_depth=5, shallowest_depth=3) 
