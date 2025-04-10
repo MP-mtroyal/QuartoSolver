@@ -55,9 +55,6 @@ class Affine4Cannon(QuartoCannon):
             if game.remainingPieces[i] < 1:
                 continue
             for n in range(len(placed)):
-                # Don't check againt the src piece
-                if placed[n] == toPlace:
-                    continue
                 # End loop early if current pieces shares a different number of traits
                 # in common with the placed piece
                 if self.traitsInCommon(i, placed[n]) != self.traitsInCommon(toPlace, placed[n]):
