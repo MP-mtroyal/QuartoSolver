@@ -180,9 +180,10 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         if unlinked_hashes:
             saver = DepthSaver()
             saver.hashes = unlinked_hashes
-            saver.solutions = [sol + ' # Parentless' for sol in saver.solutions]
+            saver.solutions = [depth_solutions[hash_] + ' # Parentless' for hash_ in unlinked_hashes]
             saver.saveSolution(f"Agl_Level_{d}_parentless.txt", path=folder + '/')
             print(f"{len(unlinked_hashes)} child boards had no matching parent and saved as Agl_Level_{d}_parentless.txt.")
+
 
         # Save Solutions at Each Depth
         # if best_solutions:
