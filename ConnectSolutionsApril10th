@@ -19,10 +19,10 @@ def parse_solutions(file_path):
     return dict(zip(loader.hashes, loader.solutions))
 
 # ------------------------------------------------------------
-# Loads all unsolved board hashes from depth-(d) input files.
+# Loads all unsolved board hashes from depth input files.
 # This includes:
 #   - Agl_Level_<d>_unsolved.txt
-#   - Agl_Level_<d>_unsolved_chuck#.txt (optional chunks)
+#   - Agl_Level_<d>_unsolved_chunk#.txt (optional chunks)
 #
 # Returns:
 #   A flat list of board hashes [hash1, hash2, ...]
@@ -37,7 +37,7 @@ def load_hashes_from_files(folder, depth):
 
     chunk_num = 0
     while True:
-        chunk_file = os.path.join(folder, f"Agl_Level_{depth}_unsolved_chuck{chunk_num}.txt")
+        chunk_file = os.path.join(folder, f"Agl_Level_{depth}_unsolved_chunk{chunk_num}.txt")
         if not os.path.exists(chunk_file):
             break
         loader = DepthSaver()
@@ -70,7 +70,7 @@ def log_match_breakdown(depth_solutions, parent_hashes):
 # At each depth level d:
 #   - Loads solved boards from Agl_Level_d_solved.txt
 #   - Loads parent hashes from depth d-1 unsolved files
-#   - Matches child → parent in two phases:
+#   - Matches child to parent in two phases:
 #       1. Direct hash match
 #       2. Simulated children via piece/square moves + canonization
 #   - Backpropagates the best child solution string (lowest score)
@@ -175,7 +175,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
                 saver = DepthSaver()
                 saver.hashes = list(best_solutions.keys())
                 saver.solutions = list(best_solutions.values())
-                saver.saveSolution(f"Agl_Level_{d-1}_merged_solved.txt", path=folder)
+                saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder)
                 print(f"Final depth {d-1} solved output written: {len(best_solutions)} boards.")
 
 
