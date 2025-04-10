@@ -109,7 +109,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         for direct_hash in direct_matched:
             child_sol = depth_solutions[direct_hash]
             score = ord(child_sol[2]) - 49  # Extract integer score from solution string
-            if (direct_hash not in best_solutions) or score < (ord(best_solutions[direct_hash][2]) - 49):
+            if (direct_hash not in best_solutions) or score > (ord(best_solutions[direct_hash][2]) - 49):
                 best_solutions[direct_hash] = child_sol  # Assign best scoring solution
 
         # Generate children from unmatched parent boards
