@@ -84,7 +84,7 @@ class AglCannon(QuartoCannon):
     #======= cannonizeGame ==========#
     # Uses AGL(2,4) transformations to find the canonical version of a board.
     def cannonizeGame(self, game:Affine4Game) -> Affine4Game:
-        #game = game.copy()
+        game = game.copy()
         board = game.board
         transformations = self.getTransformedBoardsFromAGL(board, self.agl_transforms)
         cBoard = self.getCanditateBoards(transformations)

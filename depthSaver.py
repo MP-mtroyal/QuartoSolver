@@ -163,11 +163,11 @@ class DepthSaver:
         self.solutions[index] = sol
 
 
-# saver = DepthSaver(Affine4Cannon())
+# # saver = DepthSaver(Affine4Cannon())
 
-# saver.exploreDepth(6, Affine4Game(undoMemLength=0))
+# # saver.exploreDepth(6, Affine4Game(undoMemLength=0))
 
-# saver.saveDepth("Affine6BoardsSmall.txt")
+# # saver.saveDepth("Affine6BoardsSmall.txt")
 
 # loader = DepthSaver(None)
 # loader.loadGames("Agl_Level_8_chunk1_CudaSolved.txt", "S:/QuartoStates/AglExplore/")
@@ -214,15 +214,24 @@ class DepthSaver:
 # gameSol  = "AHBLFIGMIBJNLKM1"
 # game = Affine4Game()
 
-# game.loadFromHash(gameHash)
-# game.printGame()
-# print()
+# # for i in range(3):
+# #     print()
+# #     game.loadFromHash(currentWins[i])
+# #     game.printGame()
 
-# tags = ["Piece: ", "Place: "]
-# for i in range(len(gameSol) - 1):
-#     if i%2 == 0:
-#         print(f'{tags[i%2]}{ord(gameSol[i]) - 64}')
-#     else:
-#         val = ord(gameSol[i]) - 64
-#         print(f'{tags[i%2]} X:{val >> 2} Y:{val & 3}')
-#         print()
+# # gameHash = 15965667708012
+# # gameSol  = "AHBLFIGMIBJNLKM1"
+# # game = Affine4Game()
+
+# # game.loadFromHash(gameHash)
+# # game.printGame()
+# # print()
+
+# # tags = ["Piece: ", "Place: "]
+# # for i in range(len(gameSol) - 1):
+# #     if i%2 == 0:
+# #         print(f'{tags[i%2]}{ord(gameSol[i]) - 64}')
+# #     else:
+# #         val = ord(gameSol[i]) - 64
+# #         print(f'{tags[i%2]} X:{val >> 2} Y:{val & 3}')
+# #         print()
