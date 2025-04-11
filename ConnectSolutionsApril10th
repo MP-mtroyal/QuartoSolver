@@ -49,7 +49,16 @@ def combine_solution_files(folder, depth):
         existing_loader.loadGames(fileName=os.path.basename(solved_file), path=folder + "/")
         combined_solutions.update(dict(zip(existing_loader.hashes, existing_loader.solutions)))
 
-    # First, load _to_ files (they only contain valid solutions)
+    # Then, load backpropagated solutions if available
+    backprop_file = os.path.join(folder, f"Agl_Level_{depth}_backprop_solved.txt")
+    if os.path.exists(backprop_file):
+        loader = DepthSaver()
+        loader.loadGames(fileName=os.path.basename(backprop_file), path=folder + "/")
+        for h, s in zip(loader.hashes, loader.solutions):
+            if h not in combined_solutions:
+                combined_solutions[h] = s
+
+    # Then, load _to_ files (they only contain valid solutions)
     for file in sorted(os.listdir(folder)):
         if file.startswith(f"Agl_Level_{depth}_chunk") and "_to_" in file:
             loader = DepthSaver()
@@ -103,23 +112,7 @@ def load_hashes_from_files(folder, depth):
         hashes.extend(loader.hashes)
         chunk_num += 1
 
-    return hashes
-
-# ------------------------------------------------------------
-# Reports how many parent hashes match directly with child
-# solved hashes and how many require simulation.
-# ------------------------------------------------------------
-def log_match_breakdown(depth_solutions, parent_hashes):
-    solved_hashes = set(depth_solutions.keys())
-    parent_hash_set = set(parent_hashes)
-
-    direct_matches = solved_hashes.intersection(parent_hash_set)
-    simulated_required = parent_hash_set - direct_matches
-
-    print(f"\nMatch Breakdown:")
-    print(f"Direct matches     : {len(direct_matches)}")
-    print(f"Require simulation : {len(simulated_required)}")
-    print(f"Total parent boards: {len(parent_hash_set)}")
+    return hashes 
 
 # ------------------------------------------------------------
 # Helper to find the score of a solution string based on whos
@@ -187,12 +180,12 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         print(f"\nBackpropagating from depth {d} to depth {d-1}...")
 
         # Load the solved boards from depth d
-        # combine_solution_files(folder, d)
+        combine_solution_files(folder, d)
         depth_solutions = parse_solutions(os.path.join(folder, f"Agl_Level_{d}_solved.txt"))
         depth_solution_hashes = set(depth_solutions.keys())
 
         # Load the unsolved boards from depth d-1
-        parent_hashes = load_hashes_from_files(folder, d - 1)[:10000]
+        parent_hashes = load_hashes_from_files(folder, d - 1) # [:10000]
         parent_hash_set = set(parent_hashes)
 
         best_solutions = {}  # Will store best solution for each depth-(d-1) board
@@ -211,10 +204,13 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         end_time = time.time()
         elapsed = end_time - start_time
         print(f"\nLoading boards completed in {elapsed:.2f} seconds.")
-        log_match_breakdown(depth_solutions, parent_hashes)
 
         # Direct Matches (identical hash in both depths)
         direct_matched = depth_solution_hashes.intersection(parent_hash_set)
+        print(f"\nMatch Breakdown:")
+        print(f"Direct matches     : {len(direct_matched)}")
+        print(f"Require simulation : {len(parent_hash_set) - len(direct_matched)}")
+        print(f"Total parent boards: {len(parent_hash_set)}")
         for direct_hash in direct_matched:
             child_sol = depth_solutions[direct_hash]
 
@@ -298,7 +294,6 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
         # Save parent boards at depth d-1 without any matching solved child
         parents_without_solutions = list(parent_hash_set - set(best_solutions.keys()))
-
         if parents_without_solutions:
             dummy_sols = ['!' for _ in parents_without_solutions]
             saver = DepthSaver()
