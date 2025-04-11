@@ -125,12 +125,13 @@ def log_match_breakdown(depth_solutions, parent_hashes):
 # Helper to find the score of a solution string based on whos
 # turn it is.
 # ------------------------------------------------------------
-def find_score(solution:str) -> int:
+def find_score(solution: str) -> int:
     if len(solution) % 2 == 0:
-        return print("Not odd length path.")
-    if solution[-1] != '2':
-        return print("Invalid board.")
+        print(f"Invalid score path (even length): {solution}")
+        return -999
 
+    if solution[-1] == '0':
+        return 0
     if (len(solution) // 2) % 2 == 1:
         return 1
     else:
@@ -219,7 +220,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
             # Save first and highest best score
             score = find_score(child_sol) 
-            if (parent_hash not in best_solutions) or score > find_score(best_solutions[direct_hash]) : 
+            if (direct_hash not in best_solutions) or score > find_score(best_solutions[direct_hash]) : 
                 best_solutions[direct_hash] = child_sol  # Use best scoring solution
 
             # Save the best score with the shortest path
@@ -247,7 +248,7 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
             tried_pieces = set()
             for piece in parent_game.getRemainingPieces():
-                piece = bestPiece(parent_game, parent_game.placedPieces(), piece)
+                piece = bestPiece(parent_game, parent_game.getPlacedPieces(), piece)
                 if piece in tried_pieces:
                     continue
                 tried_pieces.add(piece)

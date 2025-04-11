@@ -163,66 +163,66 @@ class DepthSaver:
         self.solutions[index] = sol
 
 
-# saver = DepthSaver(Affine4Cannon())
+# # saver = DepthSaver(Affine4Cannon())
 
-# saver.exploreDepth(6, Affine4Game(undoMemLength=0))
+# # saver.exploreDepth(6, Affine4Game(undoMemLength=0))
 
-# saver.saveDepth("Affine6BoardsSmall.txt")
+# # saver.saveDepth("Affine6BoardsSmall.txt")
 
-loader = DepthSaver(None)
-loader.loadGames("cudaTest_solved.txt", "S:/QuartoStates/AglExplore/")
+# loader = DepthSaver(None)
+# loader.loadGames("cudaTest_solved.txt", "S:/QuartoStates/AglExplore/")
 
-invalidSolutions = {}
-errors = {}
+# invalidSolutions = {}
+# errors = {}
 
-longestSol = ""
-longestHash = None
+# longestSol = ""
+# longestHash = None
 
-currentWins = []
+# currentWins = []
 
-for i in range(len(loader.solutions)):
-    if loader.solutions[i] is None:
-        invalidSolutions[loader.hashes[i]] = loader.solutions[i]
-    elif len(loader.solutions[i]) < 3:
-        errors[loader.hashes[i]] = loader.solutions[i]
-        print(loader.solutions[i])
-    else:
-        if len(loader.solutions[i]) > len(longestSol):
-            longestSol = loader.solutions[i]
-            longestHash = loader.hashes[i]
-
-
-print(f'Invalid Solutions: {len(invalidSolutions)}')
-# for key in invalidSolutions.keys():
-#     print(f'\t{key} : {invalidSolutions[key]}')
-
-print(f'Errors: {len(errors)}')
-# for key in errors.keys():
-#     print(f'\t{key} : {errors[key]}')
-
-print(f'Longest Solution: {len(longestSol)}  | {longestHash} : {longestSol}')
+# for i in range(len(loader.solutions)):
+#     if loader.solutions[i] is None:
+#         invalidSolutions[loader.hashes[i]] = loader.solutions[i]
+#     elif len(loader.solutions[i]) < 3:
+#         errors[loader.hashes[i]] = loader.solutions[i]
+#         print(loader.solutions[i])
+#     else:
+#         if len(loader.solutions[i]) > len(longestSol):
+#             longestSol = loader.solutions[i]
+#             longestHash = loader.hashes[i]
 
 
-game = Affine4Game()
+# print(f'Invalid Solutions: {len(invalidSolutions)}')
+# # for key in invalidSolutions.keys():
+# #     print(f'\t{key} : {invalidSolutions[key]}')
 
-# for i in range(3):
-#     print()
-#     game.loadFromHash(currentWins[i])
-#     game.printGame()
+# print(f'Errors: {len(errors)}')
+# # for key in errors.keys():
+# #     print(f'\t{key} : {errors[key]}')
 
-# gameHash = 15965667708012
-# gameSol  = "AHBLFIGMIBJNLKM1"
+# print(f'Longest Solution: {len(longestSol)}  | {longestHash} : {longestSol}')
+
+
 # game = Affine4Game()
 
-# game.loadFromHash(gameHash)
-# game.printGame()
-# print()
+# # for i in range(3):
+# #     print()
+# #     game.loadFromHash(currentWins[i])
+# #     game.printGame()
 
-# tags = ["Piece: ", "Place: "]
-# for i in range(len(gameSol) - 1):
-#     if i%2 == 0:
-#         print(f'{tags[i%2]}{ord(gameSol[i]) - 64}')
-#     else:
-#         val = ord(gameSol[i]) - 64
-#         print(f'{tags[i%2]} X:{val >> 2} Y:{val & 3}')
-#         print()
+# # gameHash = 15965667708012
+# # gameSol  = "AHBLFIGMIBJNLKM1"
+# # game = Affine4Game()
+
+# # game.loadFromHash(gameHash)
+# # game.printGame()
+# # print()
+
+# # tags = ["Piece: ", "Place: "]
+# # for i in range(len(gameSol) - 1):
+# #     if i%2 == 0:
+# #         print(f'{tags[i%2]}{ord(gameSol[i]) - 64}')
+# #     else:
+# #         val = ord(gameSol[i]) - 64
+# #         print(f'{tags[i%2]} X:{val >> 2} Y:{val & 3}')
+# #         print()
