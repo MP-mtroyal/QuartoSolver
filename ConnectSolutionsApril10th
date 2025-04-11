@@ -14,6 +14,7 @@ import os
 #   Example: {123456789: "AD2", ...}
 # ------------------------------------------------------------
 def parse_solutions(file_path):
+    print(f"Parsing {file_path}...")
     loader = DepthSaver()
     loader.loadGames(fileName=os.path.basename(file_path), path=os.path.dirname(file_path) + "/")
     return dict(zip(loader.hashes, loader.solutions))
@@ -83,6 +84,7 @@ def combine_solution_files(folder, depth):
 #   A flat list of board hashes [hash1, hash2, ...]
 # ------------------------------------------------------------
 def load_hashes_from_files(folder, depth):
+    print("Loading unsolved files...")
     hashes = []
     base_file = os.path.join(folder, f"Agl_Level_{depth}_unsolved.txt")
     if os.path.exists(base_file):
@@ -164,7 +166,6 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
                     if (h not in best_solutions) or prev_score > (ord(best_solutions[h][2]) - 49):
                         best_solutions[h] = s
 
-
         log_match_breakdown(depth_solutions, parent_hashes)
 
         # Direct Matches (identical hash in both depths)
@@ -220,10 +221,15 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
                     if child_hash in remaining_solved_hashes:
                         child_sol = depth_solutions[child_hash]
 
-                        # Save first and highest best score
-                        score = ord(child_sol[2]) - 49
+                         # Encode the move that got us here
+                        pieceChr = chr(piece + 64)
+                        squareChr = chr((square.x << 2) + square.y + 64)
+                        full_solution = pieceChr + squareChr + child_sol  # Prepend move to child's solution
+
+                        # Save if it's a better score
+                        score = ord(full_solution[2]) - 49
                         if (parent_hash not in best_solutions) or score > (ord(best_solutions[parent_hash][2]) - 49):
-                            best_solutions[parent_hash] = child_sol  # Use best-scoring child
+                            best_solutions[parent_hash] = full_solution  # Use best-scoring full path
                         child_links_found.add(child_hash)  # Track it so it's not orphaned
 
                         # Save the best score with the shortest path
@@ -240,7 +246,6 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
                     parent_game.removePiece(square) # Undo the move on the original parent board
                 parent_game.deselectAll()  # Deselect the piece before moving to the next one
-
 
         # Save parent boards at depth d-1 without any matching solved child
         parents_without_solutions = list(parent_hash_set - set(best_solutions.keys()))
@@ -281,4 +286,26 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
 
 # Run backpropagation from deepest_depth up to shallowest_depth, storing best solutions at each level
-backpropagate_all(folder="./Solved_Unsolved", deepest_depth=8, shallowest_depth=4) 
+# backpropagate_all(folder="./Solved_Unsolved", deepest_depth=8, shallowest_depth=4) 
+
+
+# Ensure depth 8 solved file integrity 
+def count_duplicate_hashes(filename):
+    seen = set()
+    duplicates = set()
+
+    with open(filename, 'r') as f:
+        for line in f:
+            if ',' in line:
+                h = line.split(',', 1)[0].strip()
+                if h in seen:
+                    duplicates.add(h)
+                else:
+                    seen.add(h)
+
+    print(f"Number of duplicate hashes: {len(duplicates)}")
+
+# Example usage
+count_duplicate_hashes('./Solved_Unsolved/Agl_Level_8_solved.txt')
+print(open('./Solved_Unsolved/Agl_Level_8_solved.txt').read().count('-'))
+
