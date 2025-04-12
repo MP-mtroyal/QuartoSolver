@@ -129,73 +129,131 @@ def workerListConstructor(values, startIndex, numWorkers, numPerWorker):
 
 if __name__ == "__main__":
     srcFolder = "S:/QuartoStates/AglExplore/"
-    srcTitle  = "Agl_Level_8_chunk4_to_12_unsolved.txt"
-    #srcTitle  = "Agl_Level_8_chunk4_CudaSolved.txt"
+
+    srcTitles = [
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk5.txt",
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk6.txt",
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk7.txt",
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk8.txt",
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk9.txt",
+        "CPU_Level_8_chunk3_to_9_unsolved_subChunk10.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk5.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk6.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk7.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk8.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk9.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk10.txt",
+
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk1.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk2.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk3.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk4.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk5.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk6.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk7.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk8.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk9.txt",
+        # "CPU_Level_8_chunk4_to_9_unsolved_subChunk10.txt",
+    ]
+    #srcTitle  = "CPU_Level_8_chunk2_to_9_unsolved_subChunk3.txt"
+    #srcTitle  = "Agl_Level_8_unsolved_chunk4.txt"
     dstFolder = "S:/QuartoStates/AglExplore/"
-    dstTitle  = "Agl_Level_8_chunk4_to_13"
+    dstTitles = [
+        "CPU_Level_8_chunk3_to_10_subChunk5",
+        "CPU_Level_8_chunk3_to_10_subChunk6",
+        "CPU_Level_8_chunk3_to_10_subChunk7",
+        "CPU_Level_8_chunk3_to_10_subChunk8",
+        "CPU_Level_8_chunk3_to_10_subChunk9",
+        "CPU_Level_8_chunk3_to_10_subChunk10",
+        # "CPU_Level_8_chunk3_to_Full_subChunk5",
+        # "CPU_Level_8_chunk3_to_Full_subChunk6",
+        # "CPU_Level_8_chunk3_to_Full_subChunk7",
+        # "CPU_Level_8_chunk3_to_Full_subChunk8",
+        # "CPU_Level_8_chunk3_to_Full_subChunk9",
+        # "CPU_Level_8_chunk3_to_Full_subChunk10",
+
+        # "CPU_Level_8_chunk4_to_Full_subChunk1",
+        # "CPU_Level_8_chunk4_to_Full_subChunk2",
+        # "CPU_Level_8_chunk4_to_Full_subChunk3",
+        # "CPU_Level_8_chunk4_to_Full_subChunk4",
+        # "CPU_Level_8_chunk4_to_Full_subChunk5",
+        # "CPU_Level_8_chunk4_to_Full_subChunk6",
+        # "CPU_Level_8_chunk4_to_Full_subChunk7",
+        # "CPU_Level_8_chunk4_to_Full_subChunk8",
+        # "CPU_Level_8_chunk4_to_Full_subChunk9",
+        # "CPU_Level_8_chunk4_to_Full_subChunk10",
+    ]
+    #dstTitle  = "CPU_Level_8_chunk2_to_Full_subChunk3"
 
     startDepth = 8
-    endDepth   = 13
+    endDepth   = 10
 
-    numWorkers   = 22
-    numPerWorkerExplore = 2
+    numWorkers   = 23
+    numPerWorkerExplore = 1000
 
-    # Load game hashes only
-    games  = []
-    loader = DepthSaver()
-    loader.loadGames(fileName=srcTitle, path=srcFolder)
-    games = []
-    for i in range(len(loader.hashes)):
-        if loader.solutions[i] is None:
-            games.append(loader.hashes[i])
-    print(f'Loaded {len(games)} hashes')
+    for i in range(len(srcTitles)):
+        srcTitle = srcTitles[i]
+        dstTitle = dstTitles[i]
 
-    loader = None
+        print("=======================================================================")
+        print(f"Starting {srcTitle}")
 
-    if len(games) == 0:
-        print("Failed to load games")
-        exit()
+        # Load game hashes only
+        games  = []
+        loader = DepthSaver()
+        loader.loadGames(fileName=srcTitle, path=srcFolder)
+        games = []
+        for i in range(len(loader.hashes)):
+            if loader.solutions[i] is None:
+                games.append(loader.hashes[i])
+        print(f'Loaded {len(games)} hashes')
 
-    # Find next level games
-    solved = {}
-    unsolved = set()
-    currIndex = 0
+        loader = None
 
-    while currIndex < len(games):
-        indices, diff = workerListConstructor(games, currIndex, numWorkers, numPerWorkerExplore)
-        with multiprocessing.Pool(processes=len(indices)) as pool:
-            #results = pool.starmap(explorer, [(indices[i],) for i in range(len(indices))])
-            results = pool.starmap(exploreHashes, [(indices[i],startDepth, endDepth) for i in range(len(indices))])
-            for (currSolved, currUnsolved) in results:
-                for ele in currUnsolved:
-                    unsolved.add(ele)
-                for key in currSolved.keys():
-                    if key not in solved:
-                        solved[key] = currSolved[key]
-        currIndex += diff
-        print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(games) * 100 :0.3f}%', end="\r")
-    print()
+        if len(games) == 0:
+            print("Failed to load games")
+            exit()
+
+        # Find next level games
+        solved = {}
+        unsolved = set()
+        currIndex = 0
+
+        while currIndex < len(games):
+            indices, diff = workerListConstructor(games, currIndex, numWorkers, numPerWorkerExplore)
+            with multiprocessing.Pool(processes=len(indices)) as pool:
+                #results = pool.starmap(explorer, [(indices[i],) for i in range(len(indices))])
+                results = pool.starmap(exploreHashes, [(indices[i],startDepth, endDepth) for i in range(len(indices))])
+                for (currSolved, currUnsolved) in results:
+                    for ele in currUnsolved:
+                        unsolved.add(ele)
+                    for key in currSolved.keys():
+                        if key not in solved:
+                            solved[key] = currSolved[key]
+            currIndex += diff
+            print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(games) * 100 :0.3f}%', end="\r")
+        print()
 
 
-    print(f'\n\n{len(solved)} boards were solved and {len(unsolved)} were unsolved.')
+        print(f'\n\n{len(solved)} boards were solved and {len(unsolved)} were unsolved.')
 
 
-    # ------------------------ Save Results --------------------------------------
-    saver = DepthSaver()
-    hashes, sols = [], []
+        # ------------------------ Save Results --------------------------------------
+        saver = DepthSaver()
+        hashes, sols = [], []
 
-    if len(solved) > 0:
-        for key in solved.keys():
-            sols.append(solved[key])
-            hashes.append(key)
-        saver.hashes = hashes
-        saver.solutions = sols
-        saver.saveSolution(dstTitle + "_solved.txt", path=dstFolder)
+        if len(solved) > 0:
+            for key in solved.keys():
+                sols.append(solved[key])
+                hashes.append(key)
+            saver.hashes = hashes
+            saver.solutions = sols
+            saver.saveSolution(dstTitle + "_solved.txt", path=dstFolder)
 
-    if len(unsolved) > 0:
-        dummySols = ['-' for _ in range(len(unsolved))]
-        saver.hashes = list(unsolved)
-        saver.solutions = dummySols
-        saver.saveSolution(dstTitle + "_unsolved.txt", path=dstFolder)
+        if len(unsolved) > 0:
+            dummySols = ['-' for _ in range(len(unsolved))]
+            saver.hashes = list(unsolved)
+            saver.solutions = dummySols
+            saver.saveSolution(dstTitle + "_unsolved.txt", path=dstFolder)
 
 
