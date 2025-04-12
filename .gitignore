@@ -2,3 +2,4 @@ __pycache__/
 build/
 Solved_Unsolved/*
 lmdb_store/
+test/

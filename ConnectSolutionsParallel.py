@@ -8,6 +8,8 @@ import time
 import os
 import lmdb
 import struct
+import shutil
+import gc
 
 # ------------------------------------------------------------
 # HELPER for loadData
@@ -53,7 +55,8 @@ def combine_solution_files(folder, depth):
 
     # Then, load _to_ files (they only contain valid solutions)
     for file in sorted(os.listdir(folder)):
-        if file.startswith(f"CPU_Level_{depth}_chunk") and "_to_" in file:
+        # if file.startswith(f"Agl_Level_{depth}_chunk") and "_to_" in file: # TODO: for GPU parallelism
+        if file.startswith(f"CPU_Level_{depth}_chunk") and "_to_" in file: # for CPU parallelism
             print(f'Found chunk file {file}')
             loader = DepthSaver()
             loader.loadGames(fileName=file, path=folder + "/")
@@ -126,10 +129,16 @@ def loadData(folder, depth):
     print("Loading boards...")
     start_time = time.time()
 
-    # Load the solved boards from depth d
-    combine_solution_files(folder, depth)
-    depth_solutions = parse_solutions(os.path.join(folder, f"Agl_Level_{depth}_solved.txt"))
-    depth_solution_hashes = set(depth_solutions.keys())
+    # Load the solved boards from depth d for all chunks in folder TODO: multi file for depths 7-4
+    # combine_solution_files(folder, depth)
+    # depth_solutions = parse_solutions(os.path.join(folder, f"Agl_Level_{depth}_solved.txt"))
+    # depth_solution_hashes = set(depth_solutions.keys())
+
+    # Load for depth 8 single chunk file
+    for file in sorted(os.listdir(folder)):
+        if file.startswith(f"CPU_Level_{depth}_chunk"):
+            depth_solutions = parse_solutions(os.path.join(folder, file))
+            depth_solution_hashes = set(depth_solutions.keys())
 
     # Load the unsolved boards from depth d-1
     parent_hashes = load_unsolved(folder, depth - 1)
@@ -329,6 +338,38 @@ def workerListConstructor(values, startIndex, numWorkers, numPerWorker):
         results.append(workerValues)
     return results, index - startIndex
 
+# Test multi-folder backprop
+def make_test_multi():
+    base_folder = "./test"
+    test_folders = [
+        "test_chunk1",
+        "test_chunk2",
+        "test_chunk3"
+    ]
+
+    # Step 1: Create folders
+    for folder in test_folders:
+        os.makedirs(os.path.join(base_folder, folder), exist_ok=True)
+
+    # Step 2: Create fake solved files with distinct ranges
+    ranges = {
+        "test_chunk1": range(1000, 2000),
+        "test_chunk2": range(2000, 3000),
+        "test_chunk3": range(3000, 4000)
+    }
+
+    for folder, hash_range in ranges.items():
+        file_path = os.path.join(base_folder, folder, "CPU_Level_8_chunk0_to_10.txt")
+        with open(file_path, "w") as f:
+            for h in hash_range:
+                f.write(f"{h},AD1\n")
+
+    # Step 3: Create initial unsolved file in folder 1 with all hashes (1000–3999)
+    initial_unsolved_path = os.path.join(base_folder, "test_chunk1", "Agl_Level_7_unsolved.txt")
+    with open(initial_unsolved_path, "w") as f:
+        for h in range(1000, 4000):
+            f.write(f"{h},-\n")
+
 # ------------------------------------------------------------
 # Connect Solutions Parallelized (any depth to depth-n)
 #
@@ -349,7 +390,22 @@ def workerListConstructor(values, startIndex, numWorkers, numPerWorker):
 #   - Saves unmatched solved hashes: Agl_Level_<d>_orphans.txt
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    folder    = "./Solved_Unsolved"
+    # Test folders for test multi
+    # make_test_multi()
+    # folders = ["./test/test_chunk1",
+    #            "./test/test_chunk2",
+    #            "./test/test_chunk3"]
+    
+    # Folders for chunk back to back no interupt
+    folders = ["./Solved_Unsolved/backprop_level_8_solved_files",            
+               "./Solved_Unsolved/backprop_level_8_chunk1_to_9_solved_files", 
+               "./Solved_Unsolved/backprop_level_8_chunk2_to_9_solved_files",
+               "./Solved_Unsolved/backprop_level_8_chunk3_to_9_solved_files",
+               "./Solved_Unsolved/backprop_level_8_chunk4_to_9_solved_files",
+               "./Solved_Unsolved/backprop_level_8_chunk1_to_10_solved_files"]
+
+    # Folder for depths 7-4
+    # folder    = "./Solved_Unsolved"
     os.makedirs("lmdb_store", exist_ok=True)
 
     deepest_depth       = 8
@@ -357,93 +413,182 @@ if __name__ == "__main__":
     numWorkers          = 4
     numPerWorkerBackprop = 1000
     cannonizer          = AglCannon()
-    start_time          = time.time()
+    # start_time          = time.time()
+    first_folder = False
 
-    # Work backward from the deepest depth down to the shallowest one (inclusive)
-    for depth in range(deepest_depth, shallowest_depth, -1):
-        print(f"\nBackpropagating from depth {depth} to depth {depth-1}...")
+    for folder in folders:
+        start_time = time.time()
+        log_path = os.path.join(folder, "backprop_log.txt")
+        with open(log_path, "w") as log_file:
+            if first_folder:
+                first_folder = False
+                break
+            
+            # Work backward from the deepest depth down to the shallowest one (inclusive)
+            for depth in range(deepest_depth, shallowest_depth, -1):
+                print(f"\nBackpropagating from depth {depth} to depth {depth-1}...")
 
-        # Load data
-        (parent_hashes, parent_hash_set_local, depth_solutions_local, depth_solution_hashes_local) = loadData(folder, depth)
+                # Load data
+                (parent_hashes, parent_hash_set_local, depth_solutions_local, depth_solution_hashes_local) = loadData(folder, depth)
 
-        # This dictionary will contain the completed solution to backpropagating the solution strings
-        combined_best_solutions = {}
-    
-        # Direct Matches (identical hash in both depths)
-        direct_matched_local = depth_solution_hashes_local.intersection(parent_hash_set_local)
-        print(f"\nMatch Breakdown:")
-        print(f"Direct matches     : {len(direct_matched_local)}")
-        print(f"Require simulation : {len(parent_hash_set_local) - len(direct_matched_local)}")
-        print(f"Total parent boards: {len(parent_hash_set_local)}")
-        for direct_hash in direct_matched_local:
-            child_sol = depth_solutions_local[direct_hash]
+                # This dictionary will contain the completed solution to backpropagating the solution strings
+                combined_best_solutions = {}
+            
+                # Direct Matches (identical hash in both depths)
+                direct_matched_local = depth_solution_hashes_local.intersection(parent_hash_set_local)
+                match_summary = (
+                    f"\nMatch Breakdown:\n"
+                    f"Direct matches     : {len(direct_matched_local)}\n"
+                    f"Require simulation : {len(parent_hash_set_local) - len(direct_matched_local)}\n"
+                    f"Total parent boards: {len(parent_hash_set_local)}\n"
+                )
+                print(match_summary)
+                log_file.write(match_summary)
+                for direct_hash in direct_matched_local:
+                    child_sol = depth_solutions_local[direct_hash]
 
-            # Save first and highest best score
-            score = find_score(child_sol) 
-            if (direct_hash not in combined_best_solutions) or score > find_score(combined_best_solutions[direct_hash]) : 
-                combined_best_solutions[direct_hash] = child_sol  # Use best scoring solution
+                    # Save first and highest best score
+                    score = find_score(child_sol) 
+                    if (direct_hash not in combined_best_solutions) or score > find_score(combined_best_solutions[direct_hash]) : 
+                        combined_best_solutions[direct_hash] = child_sol  # Use best scoring solution
 
-        # Generate children from unmatched parent boards
-        remaining_solved_hashes = depth_solution_hashes_local - direct_matched_local
-        parent_hash_set_local, depth_solution_hashes_local, = None, None
+                # Generate children from unmatched parent boards
+                remaining_solved_hashes = depth_solution_hashes_local - direct_matched_local
+                parent_hash_set_local, depth_solution_hashes_local, = None, None
 
-        print("Writing data to lmbd...")
+                print(f"Direct hashes took {time.time() - start_time}s.")
+                if folder == "./Solved_Unsolved/backprop_level_8_solved_files":
+                    # Compute unsolved for direct-only folders
+                    unsolved = set(parent_hashes) - direct_matched_local
+                    if unsolved:
+                        dummy_sols = ['-' for _ in unsolved]
+                        saver = DepthSaver()
+                        saver.hashes = list(unsolved)
+                        saver.solutions = dummy_sols
+                        saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
+                        print(f"(Direct only) {len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
 
-        # Write depth_solutions_local to LMDB
-        depth_sols_lmdb_path = f"lmdb_store/Agl_Level_{depth}.lmdb"
-        with open(f"{depth_sols_lmdb_path}.tmp.txt", "w") as f:
-            for h, s in depth_solutions_local.items():
-                f.write(f"{h},{s}\n")
-        convert_txt_to_lmdb_binary_keys(f"{depth_sols_lmdb_path}.tmp.txt", depth_sols_lmdb_path)
+                    end_time = time.time()
+                    elapsed = end_time - start_time
+                    percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
+                    summary = (
+                        f"\nBackpropagation completed in {elapsed:.2f} seconds.\n"
+                        f"Depth {depth} backprop solved: {len(combined_best_solutions)}, "
+                        f"backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%\n"
+                    )
+                    print(summary)
+                    log_file.write(summary)
 
-        # Write remaining_solved_hashes to LMDBSet
-        remaining_solved_lmdb_path = f"lmdb_store/Agl_Level_{depth}_remaining_hashes.lmdb"
-        with open(f"{remaining_solved_lmdb_path}.tmp.txt", "w") as f:
-            for h in remaining_solved_hashes:
-                f.write(f"{h},1\n")  # dummy value just to create the key
-        convert_txt_to_lmdb_binary_keys(f"{remaining_solved_lmdb_path}.tmp.txt", remaining_solved_lmdb_path)
+                    first_folder = True
+                    break
+                print("Writing data to lmbd...")
 
-        depth_solutions_local, depth_solution_hashes_local = None, None
-        print("Starting workers...")
+                # Write depth_solutions_local to LMDB
+                depth_sols_lmdb_path = f"lmdb_store/Agl_Level_{depth}.lmdb"
+                with open(f"{depth_sols_lmdb_path}.tmp.txt", "w") as f:
+                    for h, s in depth_solutions_local.items():
+                        f.write(f"{h},{s}\n")
+                convert_txt_to_lmdb_binary_keys(f"{depth_sols_lmdb_path}.tmp.txt", depth_sols_lmdb_path)
 
-        unsolved = set()
-        currIndex = 0
-        while currIndex < len(parent_hashes):
-            indices, diff = workerListConstructor(parent_hashes, currIndex, numWorkers, numPerWorkerBackprop)
-            with multiprocessing.Pool(processes=len(indices), initializer=init_worker, initargs=(depth_sols_lmdb_path, remaining_solved_lmdb_path)) as pool:
-                results = pool.starmap(backpropagate, [(cannonizer, indices[i],) for i in range(len(indices))])
-                for (currSolved, currUnsolved) in results:
-                    print(f"Workers solved {len(currSolved)} boards, missed {len(currUnsolved)}")
-                    for ele in currUnsolved:
-                        unsolved.add(ele)
-                    for key in currSolved.keys():
-                        if key not in combined_best_solutions:
-                            combined_best_solutions[key] = currSolved[key]
-            currIndex += diff
-            elapsed = time.time() - start_time
-            print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(parent_hashes) * 100 :0.3f}% | Elapsed: {elapsed:.1f}s', end="\r")
-        print()
+                # Write remaining_solved_hashes to LMDBSet
+                remaining_solved_lmdb_path = f"lmdb_store/Agl_Level_{depth}_remaining_hashes.lmdb"
+                with open(f"{remaining_solved_lmdb_path}.tmp.txt", "w") as f:
+                    for h in remaining_solved_hashes:
+                        f.write(f"{h},1\n")  # dummy value just to create the key
+                convert_txt_to_lmdb_binary_keys(f"{remaining_solved_lmdb_path}.tmp.txt", remaining_solved_lmdb_path)
 
-        # Save parent boards at depth d-1 without any matching solved child
-        unsolved -= direct_matched_local
-        if unsolved:
-            dummy_sols = ['-' for _ in unsolved]
-            saver = DepthSaver()
-            saver.hashes = list(unsolved)
-            saver.solutions = dummy_sols
-            saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
-            print(f"{len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
+                depth_solutions_local, depth_solution_hashes_local = None, None
+                print(f"lmdb took {time.time() - start_time}s.")
+                print("Starting workers...")
 
-        # Save Solutions at Each Depth
-        if combined_best_solutions:
-            saver = DepthSaver()
-            saver.hashes = list(combined_best_solutions.keys())
-            saver.solutions = list(combined_best_solutions.values())
-            saver.saveSolution(f"Agl_Level_{depth-1}_backprop_solved.txt", path=folder + '/')
-            print(f"  {len(combined_best_solutions)} parent boards solved and saved.")
+                unsolved = set()
+                currIndex = 0
+                while currIndex < len(parent_hashes):
+                    indices, diff = workerListConstructor(parent_hashes, currIndex, numWorkers, numPerWorkerBackprop)
+                    with multiprocessing.Pool(processes=len(indices), initializer=init_worker, initargs=(depth_sols_lmdb_path, remaining_solved_lmdb_path)) as pool:
+                        results = pool.starmap(backpropagate, [(cannonizer, indices[i],) for i in range(len(indices))])
+                        for (currSolved, currUnsolved) in results:
+                            print(f"Workers solved {len(currSolved)} boards, missed {len(currUnsolved)}")
+                            for ele in currUnsolved:
+                                unsolved.add(ele)
+                            for key in currSolved.keys():
+                                if key not in combined_best_solutions:
+                                    combined_best_solutions[key] = currSolved[key]
+                    currIndex += diff
+                    elapsed = time.time() - start_time
+                    print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(parent_hashes) * 100 :0.3f}% | Elapsed: {elapsed:.1f}s', end="\r")
+                    print()
+                print()
 
-    end_time = time.time()
-    elapsed = end_time - start_time
-    percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
-    print(f"\nBackpropagation completed in {elapsed:.2f} seconds.")
-    print(f"Depth {depth} backprop solved: {len(combined_best_solutions)}, backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%")
+                print(f"Simulation took {time.time() - start_time}s.")
+
+                # Save parent boards at depth d-1 without any matching solved child
+                unsolved -= direct_matched_local
+                if unsolved:
+                    dummy_sols = ['-' for _ in unsolved]
+                    saver = DepthSaver()
+                    saver.hashes = list(unsolved)
+                    saver.solutions = dummy_sols
+                    saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
+                    print(f"{len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
+
+                # Save Solutions at Each Depth
+                if combined_best_solutions:
+                    saver = DepthSaver()
+                    saver.hashes = list(combined_best_solutions.keys())
+                    saver.solutions = list(combined_best_solutions.values())
+                    saver.saveSolution(f"Agl_Level_{depth-1}_backprop_solved.txt", path=folder + '/')
+                    print(f"  {len(combined_best_solutions)} parent boards solved and saved.")
+
+                end_time = time.time()
+                elapsed = end_time - start_time
+                percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
+                summary = (
+                    f"\nBackpropagation completed in {elapsed:.2f} seconds.\n"
+                    f"Depth {depth} backprop solved: {len(combined_best_solutions)}, "
+                    f"backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%\n"
+                )
+                print(summary)
+                log_file.write(summary)
+
+                # Explicit cleanup
+                del parent_hashes, parent_hash_set_local, depth_solutions_local, depth_solution_hashes_local
+                del combined_best_solutions, unsolved
+                gc.collect()
+
+        # Copy childless file to the next folder (if any)
+        current_index = folders.index(folder)
+        if current_index + 1 < len(folders):
+            next_folder = folders[current_index + 1]
+            src_file = os.path.join(folder, f"Agl_Level_{shallowest_depth}_unsolved_childless.txt")
+            dest_file = os.path.join(next_folder, f"Agl_Level_{shallowest_depth}_unsolved.txt")
+            
+            if os.path.exists(src_file):
+                shutil.copy(src_file, dest_file)
+                print(f"Copied childless file from {folder} to {next_folder}")
+            else:
+                print(f"No childless file found in {folder} to copy forward.")
+
+       
+
+
+
+    # # Combine all depth 8 backprop files for all chunk folders
+    # output_file = './test/backprop_8_solved_all.txt'
+    # combined = {}
+    # for folder in folders:
+    #     file_path = os.path.join(folder, "Agl_Level_7_backprop_solved.txt")
+    #     if os.path.exists(file_path):
+    #         with open(file_path, 'r') as f:
+    #             for line in f:
+    #                 if ',' in line:
+    #                     key, value = line.strip().split(',', 1)
+    #                     combined[int(key)] = value  # avoid duplicates
+    #     else:
+    #         print(f"File not found: {file_path}")
+
+    # with open(output_file, 'w') as f:
+    #     for key in sorted(combined.keys()):
+    #         f.write(f"{key},{combined[key]}\n")
+
+    # print(f"Combined {len(combined)} entries into {output_file}")
