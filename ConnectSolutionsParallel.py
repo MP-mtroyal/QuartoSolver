@@ -124,7 +124,7 @@ def loadData(folder, depth):
     start_time = time.time()
 
     # Load the solved boards from depth d
-    combine_solution_files(folder, depth)
+    # combine_solution_files(folder, depth)
     depth_solutions = parse_solutions(os.path.join(folder, f"Agl_Level_{depth}_solved.txt"))
     depth_solution_hashes = set(depth_solutions.keys())
 
@@ -347,11 +347,10 @@ def workerListConstructor(values, startIndex, numWorkers, numPerWorker):
 # ------------------------------------------------------------
 if __name__ == "__main__":
     folder    = "./Solved_Unsolved"
-    unsolved  = "Agl_Level_6_unsolved.txt"
     os.makedirs("lmdb_store", exist_ok=True)
 
-    deepest_depth       = 7
-    shallowest_depth    = 6
+    deepest_depth       = 8
+    shallowest_depth    = 7
     numWorkers          = 4
     numPerWorkerBackprop = 1000
     cannonizer          = AglCannon()
@@ -418,7 +417,8 @@ if __name__ == "__main__":
                         if key not in combined_best_solutions:
                             combined_best_solutions[key] = currSolved[key]
             currIndex += diff
-            print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(parent_hashes) * 100 :0.3f}%', end="\r")
+            elapsed = time.time() - start_time
+            print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(parent_hashes) * 100 :0.3f}% | Elapsed: {elapsed:.1f}s', end="\r")
         print()
 
         # Save parent boards at depth d-1 without any matching solved child
@@ -441,4 +441,6 @@ if __name__ == "__main__":
 
     end_time = time.time()
     elapsed = end_time - start_time
+    percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
     print(f"\nBackpropagation completed in {elapsed:.2f} seconds.")
+    print(f"Depth {depth} backprop solved: {len(combined_best_solutions)}, backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%")
