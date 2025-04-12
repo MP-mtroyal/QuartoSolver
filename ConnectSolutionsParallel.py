@@ -397,7 +397,7 @@ if __name__ == "__main__":
     #            "./test/test_chunk3"]
     
     # Folders for chunk back to back no interupt
-    folders = ["./Solved_Unsolved/backprop_level_8_solved_files",            
+    folders = [# "./Solved_Unsolved/backprop_level_8_solved_files",            # Completed
                "./Solved_Unsolved/backprop_level_8_chunk1_to_9_solved_files", 
                "./Solved_Unsolved/backprop_level_8_chunk2_to_9_solved_files",
                "./Solved_Unsolved/backprop_level_8_chunk3_to_9_solved_files",
@@ -414,15 +414,15 @@ if __name__ == "__main__":
     numPerWorkerBackprop = 1000
     cannonizer          = AglCannon()
     # start_time          = time.time()
-    first_folder = False
+    # first_folder = False
 
     for folder in folders:
         start_time = time.time()
         log_path = os.path.join(folder, "backprop_log.txt")
         with open(log_path, "w") as log_file:
-            if first_folder:
-                first_folder = False
-                break
+            # if first_folder:
+            #     first_folder = False
+            #     break
             
             # Work backward from the deepest depth down to the shallowest one (inclusive)
             for depth in range(deepest_depth, shallowest_depth, -1):
@@ -457,30 +457,31 @@ if __name__ == "__main__":
                 parent_hash_set_local, depth_solution_hashes_local, = None, None
 
                 print(f"Direct hashes took {time.time() - start_time}s.")
-                if folder == "./Solved_Unsolved/backprop_level_8_solved_files":
-                    # Compute unsolved for direct-only folders
-                    unsolved = set(parent_hashes) - direct_matched_local
-                    if unsolved:
-                        dummy_sols = ['-' for _ in unsolved]
-                        saver = DepthSaver()
-                        saver.hashes = list(unsolved)
-                        saver.solutions = dummy_sols
-                        saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
-                        print(f"(Direct only) {len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
+                # if folder == "./Solved_Unsolved/backprop_level_8_solved_files":
+                #     # Compute unsolved for direct-only folders
+                #     unsolved = set(parent_hashes) - direct_matched_local
+                #     if unsolved:
+                #         dummy_sols = ['-' for _ in unsolved]
+                #         saver = DepthSaver()
+                #         saver.hashes = list(unsolved)
+                #         saver.solutions = dummy_sols
+                #         saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
+                #         print(f"(Direct only) {len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
 
-                    end_time = time.time()
-                    elapsed = end_time - start_time
-                    percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
-                    summary = (
-                        f"\nBackpropagation completed in {elapsed:.2f} seconds.\n"
-                        f"Depth {depth} backprop solved: {len(combined_best_solutions)}, "
-                        f"backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%\n"
-                    )
-                    print(summary)
-                    log_file.write(summary)
+                #     end_time = time.time()
+                #     elapsed = end_time - start_time
+                #     percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
+                #     summary = (
+                #         f"\nBackpropagation completed in {elapsed:.2f} seconds.\n"
+                #         f"Depth {depth} backprop solved: {len(combined_best_solutions)}, "
+                #         f"backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%\n"
+                #     )
+                #     print(summary)
+                #     log_file.write(summary)
 
-                    first_folder = True
-                    break
+                #     first_folder = True
+                #     break
+
                 print("Writing data to lmbd...")
 
                 # Write depth_solutions_local to LMDB
