@@ -67,15 +67,6 @@ def combine_solution_files(folder, depth):
                 if h not in combined_solutions:
                     combined_solutions[h] = s
 
-    # Then, load CudaSolved files (some may have '-') but don't overwrite existing entries
-    for file in sorted(os.listdir(folder)):
-        if file.startswith(f"Agl_Level_{depth}_chunk") and "CudaSolved" in file:
-            loader = DepthSaver()
-            loader.loadGames(fileName=file, path=folder + "/")
-            for h, s in zip(loader.hashes, loader.solutions):
-                if h not in combined_solutions:
-                    combined_solutions[h] = s
-
     # Save the merged solutions
     saver = DepthSaver()
     saver.hashes = list(combined_solutions.keys())
@@ -93,7 +84,7 @@ def combine_solution_files(folder, depth):
 # Returns:
 #   A flat list of board hashes [hash1, hash2, ...]
 # ------------------------------------------------------------
-def load_hashes_from_files(folder, depth):
+def load_unsolved(folder, depth):
     print("Loading unsolved files...")
     hashes = []
     base_file = os.path.join(folder, f"Agl_Level_{depth}_unsolved.txt")
@@ -101,16 +92,6 @@ def load_hashes_from_files(folder, depth):
         loader = DepthSaver()
         loader.loadGames(fileName=os.path.basename(base_file), path=os.path.dirname(base_file) + "/")
         hashes.extend(loader.hashes)
-
-    chunk_num = 0
-    while True:
-        chunk_file = os.path.join(folder, f"Agl_Level_{depth}_unsolved_chunk{chunk_num}.txt")
-        if not os.path.exists(chunk_file):
-            break
-        loader = DepthSaver()
-        loader.loadGames(fileName=os.path.basename(chunk_file), path=os.path.dirname(chunk_file) + "/")
-        hashes.extend(loader.hashes)
-        chunk_num += 1
 
     return hashes 
 
@@ -123,7 +104,7 @@ def find_score(solution: str) -> int:
         print(f"Invalid score path (even length): {solution}")
         return -999
 
-    if solution[-1] == '0':
+    if solution[-1] == '1':
         return 0
     if (len(solution) // 2) % 2 == 1:
         return 1
@@ -185,21 +166,10 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
         depth_solution_hashes = set(depth_solutions.keys())
 
         # Load the unsolved boards from depth d-1
-        parent_hashes = load_hashes_from_files(folder, d - 1) # [:10000]
+        parent_hashes = load_unsolved(folder, d - 1)
         parent_hash_set = set(parent_hashes)
 
         best_solutions = {}  # Will store best solution for each depth-(d-1) board
-
-        # Load previously solved boards at depth d-1 using DepthSaver
-        prev_solved_file = os.path.join(folder, f"Agl_Level_{d-1}_solved.txt")
-        if os.path.exists(prev_solved_file):
-            saver = DepthSaver()
-            saver.loadGames(fileName=os.path.basename(prev_solved_file), path=os.path.dirname(prev_solved_file) + "/")
-            for h, s in zip(saver.hashes, saver.solutions):
-                if s is not None:
-                    prev_score = find_score(s)
-                    if (h not in best_solutions) or prev_score > find_score(best_solutions[h]):
-                        best_solutions[h] = s
 
         end_time = time.time()
         elapsed = end_time - start_time
@@ -219,32 +189,31 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
             if (direct_hash not in best_solutions) or score > find_score(best_solutions[direct_hash]) : 
                 best_solutions[direct_hash] = child_sol  # Use best scoring solution
 
-            # Save the best score with the shortest path
-            # score = ord(child_sol[2]) - 49
-            # if parent_hash not in best_solutions:
-            #     best_solutions[parent_hash] = child_sol
-            # else:
-            #     existing_score = ord(best_solutions[parent_hash][2]) - 49
-            #     if score > existing_score:
-            #         best_solutions[parent_hash] = child_sol
-            #     elif score == existing_score and len(child_sol) < len(best_solutions[parent_hash]):
-            #         best_solutions[parent_hash] = child_sol
-
         # Generate children from unmatched parent boards
         remaining_solved_hashes = depth_solution_hashes - direct_matched
-        child_links_found = set()
+        depth_solution_hashes = None
         parent_game = Affine4Game(undoMemLength=0)
+        loading_bar = LoadingBar(len(parent_hashes), title="Parent Hashes to Simulate", interval=1)
 
         for parent_hash in parent_hashes:
+            loading_bar.update()
             if parent_hash in best_solutions:
                 continue  # Already handled as a direct match
 
             # Load the parent game
             parent_game.loadFromHash(parent_hash)
+            best_score = -2
 
             tried_pieces = set()
-            for piece in parent_game.getRemainingPieces():
-                piece = bestPiece(parent_game, parent_game.getPlacedPieces(), piece)
+            pieces = parent_game.getRemainingPieces()
+            placed_pieces = parent_game.getPlacedPieces()
+            places = parent_game.getAvaliableSquares()
+            early_exit = False 
+            best_path = '-'
+
+            for piece in pieces:
+                if (best_score > 0) or early_exit: break
+                piece = bestPiece(parent_game, placed_pieces, piece)
                 if piece in tried_pieces:
                     continue
                 tried_pieces.add(piece)
@@ -253,12 +222,13 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
                     print("Piece Selection failed.")
                     continue  # Skip if piece selection failed
 
-                for square in parent_game.getAvaliableSquares():
+                for square in places:
+                    if best_score > 0: break
                     if not parent_game.placePiece(piece, square):
                         print("Place Piece failed.")
                         continue  # Skip if placement failed
 
-                    # Canonize the resulting child board
+                    # Canonize the resulting child board (for depths 1-7, not 7-8)
                     child_game = cannonizer.cannonizeGame(parent_game)
                     child_hash = child_game.hashBoard()
 
@@ -273,24 +243,21 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
 
                         # Save if it's a better score
                         score = find_score(full_solution)
-                        if (parent_hash not in best_solutions) or score > find_score(best_solutions[parent_hash]):
-                            best_solutions[parent_hash] = full_solution  # Use best-scoring full path
-                        child_links_found.add(child_hash)  # Track it so it's not orphaned
-
-                        # Save the best score with the shortest path
-                        # score = ord(child_sol[2]) - 49
-                        # if parent_hash not in best_solutions:
-                        #     best_solutions[parent_hash] = child_sol
-                        # else:
-                        #     existing_score = ord(best_solutions[parent_hash][2]) - 49
-                        #     if score > existing_score:
-                        #         best_solutions[parent_hash] = child_sol
-                        #     elif score == existing_score and len(child_sol) < len(best_solutions[parent_hash]):
-                        #         best_solutions[parent_hash] = child_sol
-                        # child_links_found.add(child_hash)  # Track it so it's not orphaned
+                        if score > best_score:
+                            best_path = full_solution  # Use best-scoring full path
+                            best_score = score
+                    else:
+                        early_exit = 1
+                        best_path = '-'
+                        break
 
                     parent_game.removePiece(square) # Undo the move on the original parent board
                 parent_game.deselectAll()  # Deselect the piece before moving to the next one
+
+            if best_path != '-':
+                best_solutions[parent_hash] = best_path
+
+        loading_bar.complete()
 
         # Save parent boards at depth d-1 without any matching solved child
         parents_without_solutions = list(parent_hash_set - set(best_solutions.keys()))
@@ -302,15 +269,6 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
             saver.saveSolution(f"Agl_Level_{d-1}_unsolved_childless.txt", path=folder + '/')
             print(f"{len(parents_without_solutions)} parent boards remained unsolved and saved as Agl_Level_{d-1}_unsolved_childless.txt.")
 
-        # Save child boards at depth d without any parent to append path to
-        unlinked_hashes = list(remaining_solved_hashes - child_links_found)
-        if unlinked_hashes:
-            saver = DepthSaver()
-            saver.hashes = unlinked_hashes
-            saver.solutions = [depth_solutions[hash_] + ' # Parentless' for hash_ in unlinked_hashes]
-            saver.saveSolution(f"Agl_Level_{d}_parentless.txt", path=folder + '/')
-            print(f"{len(unlinked_hashes)} child boards had no matching parent and saved as Agl_Level_{d}_parentless.txt.")
-
         # Save Solutions at Each Depth
         if best_solutions:
             saver = DepthSaver()
@@ -319,19 +277,10 @@ def backpropagate_all(folder, deepest_depth, shallowest_depth):
             saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder + '/')
             print(f"  {len(best_solutions)} parent boards solved and saved.")
 
-        # Save final output only at shallowest depth
-        # if d - 1 == shallowest_depth:
-        #     if best_solutions:
-        #         saver = DepthSaver()
-        #         saver.hashes = list(best_solutions.keys())
-        #         saver.solutions = list(best_solutions.values())
-        #         saver.saveSolution(f"Agl_Level_{d-1}_backprop_solved.txt", path=folder + '/')
-        #         print(f"Final depth {d-1} solved output contained {len(best_solutions)} boards.")
-
 
 # Run backpropagation from deepest_depth up to shallowest_depth, storing best solutions at each level
 start_time = time.time()
-backpropagate_all(folder="./Solved_Unsolved", deepest_depth=8, shallowest_depth=7) 
+backpropagate_all(folder="./Solved_Unsolved", deepest_depth=7, shallowest_depth=6) 
 end_time = time.time()
 elapsed = end_time - start_time
 print(f"\nBackpropagation completed in {elapsed:.2f} seconds.")
