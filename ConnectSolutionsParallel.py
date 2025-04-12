@@ -35,6 +35,7 @@ def combine_solution_files(folder, depth):
 
     # Load existing solutions first (if they exist)
     solved_file = os.path.join(folder, f"Agl_Level_{depth}_solved.txt")
+    print(f'Found solved file {solved_file}')
     if os.path.exists(solved_file):
         existing_loader = DepthSaver()
         existing_loader.loadGames(fileName=os.path.basename(solved_file), path=folder + "/")
@@ -43,6 +44,7 @@ def combine_solution_files(folder, depth):
     # Then, load backpropagated solutions if available
     backprop_file = os.path.join(folder, f"Agl_Level_{depth}_backprop_solved.txt")
     if os.path.exists(backprop_file):
+        print(f'Found backprop file {backprop_file}')
         loader = DepthSaver()
         loader.loadGames(fileName=os.path.basename(backprop_file), path=folder + "/")
         for h, s in zip(loader.hashes, loader.solutions):
@@ -51,7 +53,8 @@ def combine_solution_files(folder, depth):
 
     # Then, load _to_ files (they only contain valid solutions)
     for file in sorted(os.listdir(folder)):
-        if file.startswith(f"Agl_Level_{depth}_chunk") and "_to_" in file:
+        if file.startswith(f"CPU_Level_{depth}_chunk") and "_to_" in file:
+            print(f'Found chunk file {file}')
             loader = DepthSaver()
             loader.loadGames(fileName=file, path=folder + "/")
             for h, s in zip(loader.hashes, loader.solutions):
@@ -124,7 +127,7 @@ def loadData(folder, depth):
     start_time = time.time()
 
     # Load the solved boards from depth d
-    # combine_solution_files(folder, depth)
+    combine_solution_files(folder, depth)
     depth_solutions = parse_solutions(os.path.join(folder, f"Agl_Level_{depth}_solved.txt"))
     depth_solution_hashes = set(depth_solutions.keys())
 
