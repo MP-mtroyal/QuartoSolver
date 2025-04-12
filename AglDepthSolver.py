@@ -128,15 +128,17 @@ def workerListConstructor(values, startIndex, numWorkers, numPerWorker):
 # ==========================================================================================
 
 if __name__ == "__main__":
-    srcFolder = "S:/QuartoStates/AglExplore/"
+    #srcFolder = "S:/QuartoStates/AglExplore/"
+    srcFolder = "S:/QuartoStates/CPU_Chunks/"
 
     srcTitles = [
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk5.txt",
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk6.txt",
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk7.txt",
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk8.txt",
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk9.txt",
-        "CPU_Level_8_chunk3_to_9_unsolved_subChunk10.txt",
+        "Agl_Level_7_unsolved_childless.txt"
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk5.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk6.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk7.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk8.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk9.txt",
+        # "CPU_Level_8_chunk3_to_9_unsolved_subChunk10.txt",
         # "CPU_Level_8_chunk3_to_9_unsolved_subChunk5.txt",
         # "CPU_Level_8_chunk3_to_9_unsolved_subChunk6.txt",
         # "CPU_Level_8_chunk3_to_9_unsolved_subChunk7.txt",
@@ -159,12 +161,13 @@ if __name__ == "__main__":
     #srcTitle  = "Agl_Level_8_unsolved_chunk4.txt"
     dstFolder = "S:/QuartoStates/AglExplore/"
     dstTitles = [
-        "CPU_Level_8_chunk3_to_10_subChunk5",
-        "CPU_Level_8_chunk3_to_10_subChunk6",
-        "CPU_Level_8_chunk3_to_10_subChunk7",
-        "CPU_Level_8_chunk3_to_10_subChunk8",
-        "CPU_Level_8_chunk3_to_10_subChunk9",
-        "CPU_Level_8_chunk3_to_10_subChunk10",
+        "CPU_Level_8_chunk_ALL_solved_childless"
+        # "CPU_Level_8_chunk3_to_10_subChunk5",
+        # "CPU_Level_8_chunk3_to_10_subChunk6",
+        # "CPU_Level_8_chunk3_to_10_subChunk7",
+        # "CPU_Level_8_chunk3_to_10_subChunk8",
+        # "CPU_Level_8_chunk3_to_10_subChunk9",
+        # "CPU_Level_8_chunk3_to_10_subChunk10",
         # "CPU_Level_8_chunk3_to_Full_subChunk5",
         # "CPU_Level_8_chunk3_to_Full_subChunk6",
         # "CPU_Level_8_chunk3_to_Full_subChunk7",
@@ -185,11 +188,11 @@ if __name__ == "__main__":
     ]
     #dstTitle  = "CPU_Level_8_chunk2_to_Full_subChunk3"
 
-    startDepth = 8
-    endDepth   = 10
+    startDepth = 7
+    endDepth   = 16
 
     numWorkers   = 23
-    numPerWorkerExplore = 1000
+    numPerWorkerExplore = 5
 
     for i in range(len(srcTitles)):
         srcTitle = srcTitles[i]

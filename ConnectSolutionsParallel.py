@@ -189,7 +189,8 @@ def find_score(solution: str) -> int:
     else:
         return -1
 # ==========================================================================================
-def backpropagate(cannonizer, parent_hashes_chunk):
+#def backpropagate(cannonizer, parent_hashes_chunk):
+def backpropagate(parent_hashes_chunk):
     global shared_depth_solutions, shared_remaining_solved_hashes
     parent_game = Affine4Game(undoMemLength=0)
     best_solutions = {}
@@ -206,11 +207,13 @@ def backpropagate(cannonizer, parent_hashes_chunk):
         pieces = parent_game.getRemainingPieces()
         placed_pieces = parent_game.getPlacedPieces()
         places = parent_game.getAvaliableSquares()
-        early_exit = False 
+        deepSearch = True
+        scoreInvalid = False
         best_path = '-'
 
         for piece in pieces:
-            if (best_score > 0) or early_exit: break
+            if (best_score > 0): break 
+            if not deepSearch and scoreInvalid: break
             piece = bestPiece(parent_game, placed_pieces, piece)
             if piece in tried_pieces:
                 continue
@@ -222,13 +225,15 @@ def backpropagate(cannonizer, parent_hashes_chunk):
 
             for square in places:
                 if best_score > 0: break
+                if not deepSearch and scoreInvalid: break
                 if not parent_game.placePiece(piece, square):
                     print("Place Piece failed.")
                     continue  # Skip if placement failed
 
                 # Canonize the resulting child board (for depths 1-7, not 7-8)
-                child_game = cannonizer.cannonizeGame(parent_game)
-                child_hash = child_game.hashBoard()
+                #child_game = cannonizer.cannonizeGame(parent_game)
+                #child_hash = child_game.hashBoard()
+                child_hash = parent_game.hashBoard()
 
                 # Check if this child board was solved at depth d
                 if child_hash in shared_remaining_solved_hashes:
@@ -240,19 +245,20 @@ def backpropagate(cannonizer, parent_hashes_chunk):
                     full_solution = pieceChr + squareChr + child_sol  # Prepend move to child's solution
 
                     # Save if it's a better score
-                    score = find_score(full_solution)
+                    score = -find_score(full_solution)
                     if score > best_score:
                         best_path = full_solution  # Use best-scoring full path
                         best_score = score
+                    if score > 0:
+                        scoreInvalid = False
                 else:
-                    early_exit = 1
+                    scoreInvalid = True
                     best_path = '-'
-                    break
 
                 parent_game.removePiece(square) # Undo the move on the original parent board
             parent_game.deselectAll()  # Deselect the piece before moving to the next one
 
-        if best_path != '-':
+        if not scoreInvalid and best_path != '-':
             best_solutions[parent_hash] = best_path
 
     solved_hashes = set(best_solutions.keys())
@@ -390,19 +396,11 @@ def make_test_multi():
 #   - Saves unmatched solved hashes: Agl_Level_<d>_orphans.txt
 # ------------------------------------------------------------
 if __name__ == "__main__":
-    # Test folders for test multi
-    # make_test_multi()
-    # folders = ["./test/test_chunk1",
-    #            "./test/test_chunk2",
-    #            "./test/test_chunk3"]
     
     # Folders for chunk back to back no interupt
     folders = [# "./Solved_Unsolved/backprop_level_8_solved_files",            # Completed
-               "./Solved_Unsolved/backprop_level_8_chunk1_to_9_solved_files", 
-               "./Solved_Unsolved/backprop_level_8_chunk2_to_9_solved_files",
-               "./Solved_Unsolved/backprop_level_8_chunk3_to_9_solved_files",
-               "./Solved_Unsolved/backprop_level_8_chunk4_to_9_solved_files",
-               "./Solved_Unsolved/backprop_level_8_chunk1_to_10_solved_files"]
+                #"./Solved_Unsolved/backprop_level_8_chunk1_to_9_solved_files", 
+                "S:/QuartoStates/CPU_Chunks",]
 
     # Folder for depths 7-4
     # folder    = "./Solved_Unsolved"
@@ -410,8 +408,8 @@ if __name__ == "__main__":
 
     deepest_depth       = 8
     shallowest_depth    = 7
-    numWorkers          = 4
-    numPerWorkerBackprop = 1000
+    numWorkers          = 22
+    numPerWorkerBackprop = 5
     cannonizer          = AglCannon()
     # start_time          = time.time()
     # first_folder = False
@@ -457,30 +455,6 @@ if __name__ == "__main__":
                 parent_hash_set_local, depth_solution_hashes_local, = None, None
 
                 print(f"Direct hashes took {time.time() - start_time}s.")
-                # if folder == "./Solved_Unsolved/backprop_level_8_solved_files":
-                #     # Compute unsolved for direct-only folders
-                #     unsolved = set(parent_hashes) - direct_matched_local
-                #     if unsolved:
-                #         dummy_sols = ['-' for _ in unsolved]
-                #         saver = DepthSaver()
-                #         saver.hashes = list(unsolved)
-                #         saver.solutions = dummy_sols
-                #         saver.saveSolution(f"Agl_Level_{depth-1}_unsolved_childless.txt", path=folder + '/')
-                #         print(f"(Direct only) {len(unsolved)} parent boards remained unsolved and saved as Agl_Level_{depth-1}_unsolved_childless.txt.")
-
-                #     end_time = time.time()
-                #     elapsed = end_time - start_time
-                #     percent = ((len(combined_best_solutions)/len(parent_hashes))*100)
-                #     summary = (
-                #         f"\nBackpropagation completed in {elapsed:.2f} seconds.\n"
-                #         f"Depth {depth} backprop solved: {len(combined_best_solutions)}, "
-                #         f"backprop unsolved: {len(unsolved)}, reduction {percent:.2f}%\n"
-                #     )
-                #     print(summary)
-                #     log_file.write(summary)
-
-                #     first_folder = True
-                #     break
 
                 print("Writing data to lmbd...")
 
@@ -507,14 +481,19 @@ if __name__ == "__main__":
                 while currIndex < len(parent_hashes):
                     indices, diff = workerListConstructor(parent_hashes, currIndex, numWorkers, numPerWorkerBackprop)
                     with multiprocessing.Pool(processes=len(indices), initializer=init_worker, initargs=(depth_sols_lmdb_path, remaining_solved_lmdb_path)) as pool:
-                        results = pool.starmap(backpropagate, [(cannonizer, indices[i],) for i in range(len(indices))])
+                        #results = pool.starmap(backpropagate, [(cannonizer, indices[i],) for i in range(len(indices))])
+                        results = pool.starmap(backpropagate, [(indices[i],) for i in range(len(indices))])
+                        amountSolved, amountMissed = 0, 0
                         for (currSolved, currUnsolved) in results:
-                            print(f"Workers solved {len(currSolved)} boards, missed {len(currUnsolved)}")
+                            amountSolved += len(currSolved)
+                            amountMissed += len(currUnsolved)
+                            #print(f"Workers solved {len(currSolved)} boards, missed {len(currUnsolved)}")
                             for ele in currUnsolved:
                                 unsolved.add(ele)
                             for key in currSolved.keys():
                                 if key not in combined_best_solutions:
                                     combined_best_solutions[key] = currSolved[key]
+                        print(f"Workers solved {amountSolved} boards, missed {amountMissed}")
                     currIndex += diff
                     elapsed = time.time() - start_time
                     print(f'Explored hashes up to {currIndex}, a total of {currIndex / len(parent_hashes) * 100 :0.3f}% | Elapsed: {elapsed:.1f}s', end="\r")
@@ -570,26 +549,3 @@ if __name__ == "__main__":
             else:
                 print(f"No childless file found in {folder} to copy forward.")
 
-       
-
-
-
-    # # Combine all depth 8 backprop files for all chunk folders
-    # output_file = './test/backprop_8_solved_all.txt'
-    # combined = {}
-    # for folder in folders:
-    #     file_path = os.path.join(folder, "Agl_Level_7_backprop_solved.txt")
-    #     if os.path.exists(file_path):
-    #         with open(file_path, 'r') as f:
-    #             for line in f:
-    #                 if ',' in line:
-    #                     key, value = line.strip().split(',', 1)
-    #                     combined[int(key)] = value  # avoid duplicates
-    #     else:
-    #         print(f"File not found: {file_path}")
-
-    # with open(output_file, 'w') as f:
-    #     for key in sorted(combined.keys()):
-    #         f.write(f"{key},{combined[key]}\n")
-
-    # print(f"Combined {len(combined)} entries into {output_file}")
